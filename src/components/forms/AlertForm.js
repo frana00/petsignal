@@ -226,7 +226,11 @@ const AlertForm = ({
   };
 
   return (
-    <ScrollView style={[styles.container, style]} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      style={[styles.container, style]} 
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
       {/* Alert Type */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Tipo de Alerta</Text>
@@ -602,6 +606,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    paddingBottom: 120, // Increased bottom padding for submit button visibility
+  },
+  scrollContent: {
+    paddingBottom: 50, // Additional padding for scroll content
   },
   section: {
     marginBottom: 24,
@@ -707,11 +715,13 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   submitContainer: {
-    marginTop: 24,
-    marginBottom: 32,
+    marginTop: 32,
+    marginBottom: 60, // Increased bottom margin for better visibility
+    paddingHorizontal: 8,
   },
   submitButton: {
-    paddingVertical: 16,
+    paddingVertical: 18,
+    borderRadius: 12,
   },
   
   // Date picker styles

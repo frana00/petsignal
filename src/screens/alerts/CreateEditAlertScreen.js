@@ -23,28 +23,7 @@ const CreateEditAlertScreen = ({ route, navigation }) => {
 
   const isEditing = Boolean(alertId);
 
-  // Debug component to show auth status
-  const AuthDebugInfo = () => (
-    <View style={{
-      backgroundColor: '#f0f0f0',
-      padding: 10,
-      margin: 10,
-      borderRadius: 5,
-      borderWidth: 1,
-      borderColor: '#ddd'
-    }}>
-      <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>🐛 DEBUG INFO:</Text>
-      <Text>isAuthenticated: {isAuthenticated ? '✅ true' : '❌ false'}</Text>
-      <Text>user exists: {user ? '✅ yes' : '❌ no'}</Text>
-      {user && (
-        <>
-          <Text>username: {user.username || '❌ undefined/null'}</Text>
-          <Text>user ID: {user.id || '❌ undefined/null'}</Text>
-          <Text>user keys: {Object.keys(user).join(', ')}</Text>
-        </>
-      )}
-    </View>
-  );
+  // Debug component removed to save screen space
 
   useEffect(() => {
     if (alertData) {
@@ -186,11 +165,9 @@ const CreateEditAlertScreen = ({ route, navigation }) => {
       <KeyboardAvoidingView
         style={styles.content}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+        enabled
       >
-        {/* Debug Info - Remove in production */}
-        <AuthDebugInfo />
-        
         <AlertForm
           initialData={formData}
           onSubmit={handleFormSubmit}
