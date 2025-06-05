@@ -13,6 +13,10 @@ import RegisterScreen from '../screens/auth/RegisterScreen';
 import HomeScreen from '../screens/home/HomeScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 
+// Alert Screens
+import AlertDetailScreen from '../screens/alerts/AlertDetailScreen';
+import CreateEditAlertScreen from '../screens/alerts/CreateEditAlertScreen';
+
 const Stack = createStackNavigator();
 
 // Auth Stack - for non-authenticated users
@@ -54,6 +58,20 @@ const MainStack = () => {
             shadowOpacity: 0,
           },
           headerTintColor: COLORS.primary,
+        }}
+      />
+      <Stack.Screen 
+        name="AlertDetail" 
+        component={AlertDetailScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="CreateEditAlert" 
+        component={CreateEditAlertScreen}
+        options={{
+          headerShown: false,
         }}
       />
     </Stack.Navigator>

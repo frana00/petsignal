@@ -1,245 +1,283 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
+  ScrollView,
   RefreshControl,
-  Alert,
+  Dimensions,
+  FlatList,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
-import { getAlerts } from '../../services/alerts';
-import { COLORS, ALERT_TYPES, PAGINATION } from '../../utils/constants';
+import { useAlert } from '../../context/AlertContext';
+import { COLORS, ALERT_TYPES } from '../../utils/constants';
 import Loading from '../../components/common/Loading';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import EmptyState from '../../components/common/EmptyState';
-import Button from '../../components/common/Button';
+import AlertCard from '../../components/alerts/AlertCard';
 
-const AlertItem = ({ item, onPress }) => {
-  const getTypeColor = () => {
-    return item.type === ALERT_TYPES.LOST ? COLORS.primary : COLORS.secondary;
-  };
+// Conditional import for FlatGrid to avoid NativeEventEmitter errors on web
+let FlatGrid = null;
+if (Platform.OS !== 'web') {
+  try {
+    const SuperGrid = require('react-native-super-grid');
+    FlatGrid = SuperGrid.FlatGrid;
+  } catch (error) {
+    console.warn('FlatGrid not available:', error);
+  }
+}
 
-  const getTypeText = () => {
-    return item.type === ALERT_TYPES.LOST ? 'PERDIDO' : 'ENCONTRADO';
-  };
-
-  const formatDate = (dateString) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('es-ES', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      });
-    } catch {
-      return 'Fecha no disponible';
-    }
-  };
-
-  return (
-    <TouchableOpacity style={styles.alertItem} onPress={() => onPress(item)}>
-      <View style={styles.alertHeader}>
-        <View style={[styles.alertTypeTag, { backgroundColor: getTypeColor() }]}>
-          <Text style={styles.alertTypeText}>{getTypeText()}</Text>
-        </View>
-        <Text style={styles.alertDate}>{formatDate(item.date)}</Text>
-      </View>
-      
-      <Text style={styles.alertTitle} numberOfLines={2}>
-        {item.title}
-      </Text>
-      
-      <Text style={styles.alertDescription} numberOfLines={3}>
-        {item.description}
-      </Text>
-      
-      <View style={styles.alertFooter}>
-        <Text style={styles.alertLocation}>
-          📍 {item.postalCode}, {item.countryCode}
-        </Text>
-        {item.breed && (
-          <Text style={styles.alertBreed}>🐕 {item.breed}</Text>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
-};
+const { width } = Dimensions.get('window');
 
 const HomeScreen = ({ navigation }) => {
-  const { user, logout } = useAuth();
-  const [alerts, setAlerts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState(null);
-  const [filter, setFilter] = useState(null); // null = all, LOST, SEEN
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-
-  const loadAlerts = useCallback(async (pageNum = 0, filterType = null, isRefresh = false) => {
-    try {
-      if (pageNum === 0) {
-        setError(null);
-        if (!isRefresh) setLoading(true);
-      } else {
-        setLoadingMore(true);
-      }
-
-      const options = {
-        page: pageNum,
-        size: PAGINATION.DEFAULT_SIZE,
-        status: 'ACTIVE', // Only show active alerts
-      };
-
-      if (filterType) {
-        options.type = filterType;
-      }
-
-      const data = await getAlerts(options);
-      
-      if (pageNum === 0) {
-        setAlerts(data);
-      } else {
-        setAlerts(prev => [...prev, ...data]);
-      }
-
-      setHasMore(data.length === PAGINATION.DEFAULT_SIZE);
-      setPage(pageNum);
-    } catch (err) {
-      setError(err.message);
-      if (pageNum === 0) {
-        setAlerts([]);
-      }
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-      setLoadingMore(false);
-    }
-  }, []);
+  const { user } = useAuth();
+  const { 
+    alerts, 
+    loading, 
+    error, 
+    refreshing, 
+    filters,
+    pagination,
+    refreshAlerts, 
+    loadMoreAlerts, 
+    filterByType, 
+    clearFilters,
+    getFilteredCount,
+    getAlertsByType 
+  } = useAlert();
 
   useEffect(() => {
-    loadAlerts(0, filter);
-  }, [filter]);
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    loadAlerts(0, filter, true);
-  };
-
-  const handleLoadMore = () => {
-    if (!loadingMore && hasMore) {
-      loadAlerts(page + 1, filter);
-    }
-  };
-
-  const handleFilterChange = (newFilter) => {
-    setFilter(newFilter);
-  };
+    refreshAlerts();
+  }, []);
 
   const handleAlertPress = (alert) => {
-    // TODO: Navigate to alert detail screen
-    Alert.alert('Detalle de Alerta', `${alert.title}\n\n${alert.description}`);
+    navigation.navigate('AlertDetail', { alertId: alert.id });
+  };
+
+  const handleCreateAlert = () => {
+    navigation.navigate('CreateEditAlert');
   };
 
   const handleProfilePress = () => {
     navigation.navigate('Profile');
   };
 
-  const renderHeader = () => (
-    <View style={styles.header}>
-      <Text style={styles.headerTitle}>PetSignal</Text>
-      <TouchableOpacity 
-        onPress={handleProfilePress} 
-        style={styles.profileButton}
-        accessibilityLabel="Ir a perfil de usuario"
-        accessibilityHint="Abre la pantalla de perfil donde puedes ver y editar tu información"
-        accessibilityRole="button"
-      >
-        <Text style={styles.profileButtonText}>👤</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  const renderFilters = () => (
-    <View style={styles.filtersContainer}>
-      <Text style={styles.filtersTitle}>Filtrar por:</Text>
-      <View style={styles.filterButtons}>
-        <Button
-          title="Todos"
-          onPress={() => handleFilterChange(null)}
-          variant={filter === null ? 'primary' : 'outline'}
-          style={styles.filterButton}
-        />
-        <Button
-          title="Perdidos"
-          onPress={() => handleFilterChange(ALERT_TYPES.LOST)}
-          variant={filter === ALERT_TYPES.LOST ? 'primary' : 'outline'}
-          style={styles.filterButton}
-        />
-        <Button
-          title="Encontrados"
-          onPress={() => handleFilterChange(ALERT_TYPES.SEEN)}
-          variant={filter === ALERT_TYPES.SEEN ? 'secondary' : 'outline'}
-          style={styles.filterButton}
-        />
-      </View>
-    </View>
-  );
-
-  const renderFooter = () => {
-    if (!loadingMore) return null;
+  const renderFilterButton = (type, label, icon) => {
+    const isActive = filters.type === type;
+    const count = type ? (getAlertsByType(type) || []).length : getFilteredCount();
+    
     return (
-      <View style={styles.loadingMore}>
-        <Loading message="Cargando más alertas..." />
-      </View>
+      <TouchableOpacity
+        key={type || 'all'}
+        style={[
+          styles.filterButton,
+          isActive && styles.filterButtonActive,
+          isActive && { 
+            backgroundColor: type === ALERT_TYPES.LOST ? COLORS.primary : COLORS.secondary 
+          }
+        ]}
+        onPress={() => filterByType(type)}
+      >
+        <Text style={[
+          styles.filterButtonIcon,
+          isActive && styles.filterButtonIconActive
+        ]}>
+          {icon}
+        </Text>
+        <Text style={[
+          styles.filterButtonText,
+          isActive && styles.filterButtonTextActive
+        ]}>
+          {label}
+        </Text>
+        <Text style={[
+          styles.filterButtonCount,
+          isActive && styles.filterButtonCountActive
+        ]}>
+          {count}
+        </Text>
+      </TouchableOpacity>
     );
   };
 
-  if (loading && !refreshing) {
-    return <Loading message="Cargando alertas..." />;
-  }
+  const renderHeader = () => (
+    <View style={styles.header}>
+      {/* Welcome Section */}
+      <View style={styles.welcomeSection}>
+        <View style={styles.welcomeText}>
+          <Text style={styles.welcomeTitle}>¡Hola, {user?.username}!</Text>
+          <Text style={styles.welcomeSubtitle}>
+            Ayuda a reunir mascotas con sus familias
+          </Text>
+        </View>
+        <TouchableOpacity 
+          style={styles.profileButton}
+          onPress={handleProfilePress}
+          accessibilityLabel="Ir a perfil"
+          accessibilityRole="button"
+        >
+          <Text style={styles.profileButtonText}>👤</Text>
+        </TouchableOpacity>
+      </View>
 
-  if (error && alerts.length === 0) {
-    return (
-      <SafeAreaView style={styles.container}>
-        {renderHeader()}
-        <ErrorMessage
-          message={error}
-          onRetry={() => loadAlerts(0, filter)}
+      {/* Stats Section */}
+      <View style={styles.statsSection}>
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>{(getAlertsByType(ALERT_TYPES.LOST) || []).length}</Text>
+          <Text style={styles.statLabel}>Perdidos</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>{(getAlertsByType(ALERT_TYPES.FOUND) || []).length}</Text>
+          <Text style={styles.statLabel}>Encontrados</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>{getFilteredCount()}</Text>
+          <Text style={styles.statLabel}>Total</Text>
+        </View>
+      </View>
+
+      {/* Filter Section */}
+      <View style={styles.filterSection}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterContainer}
+        >
+          {renderFilterButton(null, 'Todos', '🔍')}
+          {renderFilterButton(ALERT_TYPES.LOST, 'Perdidos', '😢')}
+          {renderFilterButton(ALERT_TYPES.FOUND, 'Encontrados', '😊')}
+        </ScrollView>
+        
+        {filters.type && (
+          <TouchableOpacity
+            style={styles.clearFiltersButton}
+            onPress={clearFilters}
+          >
+            <Text style={styles.clearFiltersText}>Limpiar filtros</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+
+  const renderEmptyState = () => {
+    if (filters.type) {
+      return (
+        <EmptyState
+          icon="🔍"
+          title="No hay alertas"
+          message={`No se encontraron alertas de tipo "${filters.type === ALERT_TYPES.LOST ? 'Perdidos' : 'Encontrados'}"`}
+          action={{
+            text: 'Ver todas',
+            onPress: clearFilters,
+          }}
         />
-      </SafeAreaView>
+      );
+    }
+
+    return (
+      <EmptyState
+        icon="🐾"
+        title="No hay alertas aún"
+        message="Sé el primero en crear una alerta para ayudar a las mascotas"
+        action={{
+          text: 'Crear alerta',
+          onPress: handleCreateAlert,
+        }}
+      />
     );
+  };
+
+  const renderFooter = () => {
+    if (!pagination.hasMore && (alerts || []).length > 0) {
+      return (
+        <View style={styles.footerMessage}>
+          <Text style={styles.footerText}>
+            No hay más alertas para mostrar
+          </Text>
+        </View>
+      );
+    }
+    return null;
+  };
+
+  if (loading && (alerts || []).length === 0) {
+    return <Loading message="Cargando alertas..." />;
   }
 
   return (
     <SafeAreaView style={styles.container}>
       {renderHeader()}
-      {renderFilters()}
       
-      <FlatList
-        data={alerts}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <AlertItem item={item} onPress={handleAlertPress} />
-        )}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-        onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.1}
-        ListFooterComponent={renderFooter}
-        ListEmptyComponent={
-          <EmptyState
-            message="No hay alertas disponibles"
-            icon="🔍"
-          />
-        }
-        contentContainerStyle={alerts.length === 0 ? styles.emptyContainer : null}
-        showsVerticalScrollIndicator={false}
-      />
+      {error ? (
+        <ErrorMessage 
+          message={error} 
+          onRetry={() => refreshAlerts()}
+        />
+      ) : Platform.OS !== 'web' && FlatGrid ? (
+        <FlatGrid
+          itemDimension={150}
+          data={alerts || []}
+          style={styles.gridList}
+          spacing={16}
+          renderItem={({ item }) => (
+            <AlertCard alert={item} onPress={handleAlertPress} />
+          )}
+          onEndReached={() => loadMoreAlerts()}
+          onEndReachedThreshold={0.3}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={refreshAlerts}
+              colors={[COLORS.primary]}
+              tintColor={COLORS.primary}
+            />
+          }
+          ListEmptyComponent={renderEmptyState}
+        />
+      ) : (
+        // Web fallback using FlatList
+        <FlatList
+          data={alerts || []}
+          renderItem={({ item }) => (
+            <View style={styles.webListItem}>
+              <AlertCard alert={item} onPress={handleAlertPress} />
+            </View>
+          )}
+          numColumns={Math.floor(width / 180)}
+          key={Math.floor(width / 180)}
+          onEndReached={() => loadMoreAlerts()}
+          onEndReachedThreshold={0.3}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={refreshAlerts}
+              colors={[COLORS.primary]}
+              tintColor={COLORS.primary}
+            />
+          }
+          ListEmptyComponent={renderEmptyState}
+          contentContainerStyle={styles.webListContainer}
+          ListFooterComponent={renderFooter}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
+
+      {/* Floating Action Button */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={handleCreateAlert}
+        activeOpacity={0.8}
+        accessibilityLabel="Crear nueva alerta"
+        accessibilityRole="button"
+      >
+        <Text style={styles.fabIcon}>+</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };
@@ -250,129 +288,175 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   header: {
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.lightGray,
+  },
+  welcomeSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.lightGray,
-    elevation: 2,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    marginBottom: 16,
   },
-  headerTitle: {
+  welcomeText: {
+    flex: 1,
+  },
+  welcomeTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: COLORS.primary,
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  welcomeSubtitle: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
   },
   profileButton: {
-    padding: 14,
+    width: 44,
+    height: 44,
     borderRadius: 22,
     backgroundColor: COLORS.background,
-    minWidth: 48,
-    minHeight: 48,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.lightGray,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
   },
   profileButtonText: {
     fontSize: 20,
   },
-  filtersContainer: {
-    padding: 20,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.lightGray,
-  },
-  filtersTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: 12,
-  },
-  filterButtons: {
+  statsSection: {
     flexDirection: 'row',
-    gap: 8,
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingVertical: 16,
+    marginBottom: 8,
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+  },
+  statDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: COLORS.lightGray,
+  },
+  filterSection: {
+    paddingBottom: 16,
+  },
+  filterContainer: {
+    paddingHorizontal: 16,
   },
   filterButton: {
-    flex: 1,
-    paddingVertical: 8,
-  },
-  alertItem: {
-    backgroundColor: COLORS.white,
-    marginHorizontal: 20,
-    marginVertical: 8,
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  alertHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 12,
+    borderRadius: 20,
+    backgroundColor: COLORS.lightGray,
+    borderWidth: 1,
+    borderColor: COLORS.gray,
   },
-  alertTypeTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+  filterButtonActive: {
+    borderColor: COLORS.primary,
   },
-  alertTypeText: {
+  filterButtonIcon: {
+    fontSize: 16,
+    marginRight: 6,
+  },
+  filterButtonIconActive: {
+    // Active icon styling
+  },
+  filterButtonText: {
+    fontSize: 14,
+    color: COLORS.text,
+    marginRight: 6,
+  },
+  filterButtonTextActive: {
     color: COLORS.white,
-    fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
-  alertDate: {
+  filterButtonCount: {
     fontSize: 12,
     color: COLORS.textSecondary,
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    minWidth: 20,
+    textAlign: 'center',
   },
-  alertTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: 8,
+  filterButtonCountActive: {
+    color: COLORS.primary,
+    backgroundColor: COLORS.white,
   },
-  alertDescription: {
+  clearFiltersButton: {
+    alignSelf: 'center',
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  clearFiltersText: {
+    fontSize: 14,
+    color: COLORS.primary,
+    textDecorationLine: 'underline',
+  },
+  gridList: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  // Web-specific styles
+  webListContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  webListItem: {
+    flex: 1,
+    margin: 8,
+    maxWidth: 180,
+  },
+  footerMessage: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  footerText: {
     fontSize: 14,
     color: COLORS.textSecondary,
-    lineHeight: 20,
-    marginBottom: 12,
+    textAlign: 'center',
   },
-  alertFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
     alignItems: 'center',
+    elevation: 8,
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
-  alertLocation: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-  },
-  alertBreed: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-  },
-  loadingMore: {
-    padding: 20,
-  },
-  emptyContainer: {
-    flexGrow: 1,
+  fabIcon: {
+    fontSize: 24,
+    color: COLORS.white,
+    fontWeight: 'bold',
   },
 });
 

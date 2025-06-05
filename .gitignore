@@ -50,10 +50,21 @@ src/utils/network.config.js
 logs/
 
 # Debug and testing files
-SOLUTION_SUMMARY.md
-TESTING_GUIDE.md
 debug_profile.js
 src/utils/testHelpers.js
+src/utils/e2eTest.js
+src/utils/integrationTest.js
+TestRunner.js
+App.test.js
+*test.js
+*Test.js
+*.test.*
+*.spec.*
+
+# Backend documentation and sensitive data
+backend.txt
+*.md
+!README.md
 
 # Runtime data
 pids/

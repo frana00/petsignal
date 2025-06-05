@@ -12,7 +12,8 @@ export const DATE_FORMAT = 'yyyy-MM-dd HH:mm:ss';
 // Alert types
 export const ALERT_TYPES = {
   LOST: 'LOST',
-  SEEN: 'SEEN',
+  FOUND: 'FOUND',
+  SEEN: 'SEEN', // Deprecated: use FOUND instead
 };
 
 // Alert status
