@@ -131,7 +131,7 @@ const HomeScreen = ({ navigation }) => {
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statItem}>
-          <Text style={styles.statNumber}>{(getAlertsByType(ALERT_TYPES.FOUND) || []).length}</Text>
+          <Text style={styles.statNumber}>{(getAlertsByType(ALERT_TYPES.SEEN) || []).length}</Text>
           <Text style={styles.statLabel}>Encontrados</Text>
         </View>
         <View style={styles.statDivider} />
@@ -150,7 +150,7 @@ const HomeScreen = ({ navigation }) => {
         >
           {renderFilterButton(null, 'Todos', '🔍')}
           {renderFilterButton(ALERT_TYPES.LOST, 'Perdidos', '😢')}
-          {renderFilterButton(ALERT_TYPES.FOUND, 'Encontrados', '😊')}
+          {renderFilterButton(ALERT_TYPES.SEEN, 'Encontrados', '😊')}
         </ScrollView>
         
         {filters.type && (

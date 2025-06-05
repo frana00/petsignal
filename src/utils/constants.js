@@ -12,8 +12,8 @@ export const DATE_FORMAT = 'yyyy-MM-dd HH:mm:ss';
 // Alert types
 export const ALERT_TYPES = {
   LOST: 'LOST',
-  FOUND: 'FOUND',
-  SEEN: 'SEEN', // Deprecated: use FOUND instead
+  SEEN: 'SEEN', // For found pets (backend expects SEEN)
+  FOUND: 'SEEN', // Alias for SEEN to maintain backwards compatibility
 };
 
 // Alert status

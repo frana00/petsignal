@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAlert } from '../../context/AlertContext';
+import { useAuth } from '../../context/AuthContext';
 import { uploadMultiplePhotos } from '../../services/photos';
 import { COLORS } from '../../utils/constants';
 import AlertForm from '../../components/forms/AlertForm';
@@ -17,9 +18,33 @@ import Button from '../../components/common/Button';
 const CreateEditAlertScreen = ({ route, navigation }) => {
   const { alertId, alertData } = route.params || {};
   const { createNewAlert, updateExistingAlert, loading, error } = useAlert();
+  const { user, isAuthenticated } = useAuth();
   const [formData, setFormData] = useState(null);
 
   const isEditing = Boolean(alertId);
+
+  // Debug component to show auth status
+  const AuthDebugInfo = () => (
+    <View style={{
+      backgroundColor: '#f0f0f0',
+      padding: 10,
+      margin: 10,
+      borderRadius: 5,
+      borderWidth: 1,
+      borderColor: '#ddd'
+    }}>
+      <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>🐛 DEBUG INFO:</Text>
+      <Text>isAuthenticated: {isAuthenticated ? '✅ true' : '❌ false'}</Text>
+      <Text>user exists: {user ? '✅ yes' : '❌ no'}</Text>
+      {user && (
+        <>
+          <Text>username: {user.username || '❌ undefined/null'}</Text>
+          <Text>user ID: {user.id || '❌ undefined/null'}</Text>
+          <Text>user keys: {Object.keys(user).join(', ')}</Text>
+        </>
+      )}
+    </View>
+  );
 
   useEffect(() => {
     if (alertData) {
@@ -31,6 +56,37 @@ const CreateEditAlertScreen = ({ route, navigation }) => {
     try {
       // Separate photos from form data
       const { photos, ...alertFormData } = data;
+      
+      // Debug logging to check user context
+      console.log('🔍 Debug: user object from context:', user);
+      console.log('🔍 Debug: user.username:', user?.username);
+      
+      // Validate user authentication before proceeding
+      if (!user || !user.username) {
+        console.error('❌ Error: User not authenticated or username missing');
+        Alert.alert(
+          'Error de autenticación',
+          'No se pudo identificar al usuario. Por favor, inicia sesión nuevamente.',
+          [
+            {
+              text: 'Ir al login',
+              onPress: () => navigation.navigate('Login'),
+            },
+          ]
+        );
+        return;
+      }
+      
+      // Add username to the alert data (required by backend)
+      alertFormData.username = user.username;
+      
+      // Verify username was added
+      console.log('🔍 Debug: username added to form data:', alertFormData.username);
+      
+      // Log the data being sent for debugging (including postal code status)
+      console.log('📝 Form data being submitted:', alertFormData);
+      console.log('🏠 Debug: postal code in data?', 'postalCode' in alertFormData ? alertFormData.postalCode : 'NOT INCLUDED');
+      console.log('🗝️ Debug: all keys in form data:', Object.keys(alertFormData));
       
       if (isEditing) {
         // Update existing alert
@@ -132,6 +188,9 @@ const CreateEditAlertScreen = ({ route, navigation }) => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
       >
+        {/* Debug Info - Remove in production */}
+        <AuthDebugInfo />
+        
         <AlertForm
           initialData={formData}
           onSubmit={handleFormSubmit}

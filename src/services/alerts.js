@@ -45,7 +45,30 @@ export const getAlertById = async (alertId) => {
  * @returns {Promise<Object>} - Created alert data
  */
 export const createAlert = async (alertData) => {
-  const response = await apiClient.post('/alerts', alertData);
+  // Clean up undefined values to avoid sending them as null
+  // Special handling for username - it should never be filtered out if present
+  const cleanData = Object.fromEntries(
+    Object.entries(alertData).filter(([key, value]) => {
+      // Username is required - never filter it out unless it's null/undefined
+      if (key === 'username') {
+        return value !== undefined && value !== null;
+      }
+      // For other fields, filter out undefined, null, and empty strings
+      return value !== undefined && value !== null && value !== '';
+    })
+  );
+  
+  console.log('📤 Creating alert with data:', cleanData);
+  console.log('🔍 Debug: username in alert data:', cleanData.username);
+  console.log('🔍 Debug: all keys in alert data:', Object.keys(cleanData));
+  
+  // Final validation before sending
+  if (!cleanData.username) {
+    console.error('❌ Critical Error: Username is missing from alert data');
+    throw new Error('Username is required but missing from alert data');
+  }
+  
+  const response = await apiClient.post('/alerts', cleanData);
   return response.data;
 };
 
@@ -56,7 +79,13 @@ export const createAlert = async (alertData) => {
  * @returns {Promise<Object>} - Updated alert data
  */
 export const updateAlert = async (alertId, alertData) => {
-  const response = await apiClient.put(`/alerts/${alertId}`, alertData);
+  // Clean up undefined values to avoid sending them as null
+  const cleanData = Object.fromEntries(
+    Object.entries(alertData).filter(([_, value]) => value !== undefined && value !== null && value !== '')
+  );
+  
+  console.log('📤 Updating alert with data:', cleanData);
+  const response = await apiClient.put(`/alerts/${alertId}`, cleanData);
   return response.data;
 };
 
