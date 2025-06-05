@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAlert } from '../../context/AlertContext';
+import { useAuth } from '../../context/AuthContext';
 import { getAlertPhotos } from '../../services/photos';
 import { COLORS, ALERT_TYPES, PET_SEX } from '../../utils/constants';
 import Loading from '../../components/common/Loading';
@@ -21,6 +22,7 @@ import Button from '../../components/common/Button';
 const AlertDetailScreen = ({ route, navigation }) => {
   const { alertId } = route.params;
   const { loadAlertById, currentAlert, loading, error, removeAlert } = useAlert();
+  const { user } = useAuth();
   const [photos, setPhotos] = useState([]);
   const [loadingPhotos, setLoadingPhotos] = useState(false);
 
@@ -104,6 +106,16 @@ Comparte para ayudar! 🐾`;
   };
 
   const handleEdit = () => {
+    // Check if user owns this alert
+    if (!isAlertOwner()) {
+      Alert.alert(
+        'Sin permisos',
+        'Solo puedes editar alertas que tú creaste.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     navigation.navigate('CreateEditAlert', { 
       alertId: currentAlert.id,
       alertData: currentAlert 
@@ -111,6 +123,16 @@ Comparte para ayudar! 🐾`;
   };
 
   const handleDelete = () => {
+    // Check if user owns this alert
+    if (!isAlertOwner()) {
+      Alert.alert(
+        'Sin permisos',
+        'Solo puedes eliminar alertas que tú creaste.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     Alert.alert(
       'Eliminar Alerta',
       '¿Estás seguro de que quieres eliminar esta alerta?',
@@ -134,6 +156,14 @@ Comparte para ayudar! 🐾`;
         },
       ]
     );
+  };
+
+  // Check if current user is the owner of the alert
+  const isAlertOwner = () => {
+    if (!user || !user.username || !currentAlert || !currentAlert.username) {
+      return false;
+    }
+    return user.username === currentAlert.username;
   };
 
   const getTypeColor = () => {
@@ -230,12 +260,15 @@ Comparte para ayudar! 🐾`;
             <Text style={styles.shareButtonText}>📤</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity
-            style={styles.editButton}
-            onPress={handleEdit}
-          >
-            <Text style={styles.editButtonText}>✏️</Text>
-          </TouchableOpacity>
+          {/* Only show edit button if user owns the alert */}
+          {isAlertOwner() && (
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={handleEdit}
+            >
+              <Text style={styles.editButtonText}>✏️</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -356,15 +389,32 @@ Comparte para ayudar! 🐾`;
           </View>
         </View>
 
-        {/* Delete Button */}
-        <View style={styles.dangerZone}>
-          <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={handleDelete}
-          >
-            <Text style={styles.deleteButtonText}>🗑️ Eliminar Alerta</Text>
-          </TouchableOpacity>
+        {/* Creator Information */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Información del Creador</Text>
+          <View style={styles.creatorContainer}>
+            <Text style={styles.creatorText}>
+              👤 Creado por: {currentAlert.username || 'Usuario desconocido'}
+            </Text>
+            {isAlertOwner() && (
+              <Text style={styles.ownerBadge}>
+                ✅ Esta es tu alerta
+              </Text>
+            )}
+          </View>
         </View>
+
+        {/* Delete Button - Only show if user owns the alert */}
+        {isAlertOwner() && (
+          <View style={styles.dangerZone}>
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={handleDelete}
+            >
+              <Text style={styles.deleteButtonText}>🗑️ Eliminar Alerta</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -504,6 +554,21 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 16,
+    fontWeight: '600',
+  },
+  creatorContainer: {
+    backgroundColor: COLORS.lightGray + '40',
+    padding: 12,
+    borderRadius: 8,
+  },
+  creatorText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginBottom: 4,
+  },
+  ownerBadge: {
+    fontSize: 14,
+    color: COLORS.primary,
     fontWeight: '600',
   },
   dangerZone: {
