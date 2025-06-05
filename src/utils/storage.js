@@ -100,3 +100,42 @@ export const clearAllData = async () => {
   await clearCredentials();
   await clearUserData();
 };
+
+/**
+ * Saves user data for a specific username
+ * @param {string} username - The username
+ * @param {Object} userData - The user data to save
+ * @returns {Promise<void>}
+ */
+export const saveUserDataForUser = async (username, userData) => {
+  try {
+    const key = `${STORAGE_KEYS.USER_DATA}_${username}`;
+    const data = JSON.stringify(userData);
+    await SecureStore.setItemAsync(key, data);
+    
+    // Also save as current user data for backward compatibility
+    await saveUserData(userData);
+  } catch (error) {
+    console.error('Error saving user data for user:', error);
+    throw new Error('Failed to save user data');
+  }
+};
+
+/**
+ * Gets saved user data for a specific username
+ * @param {string} username - The username
+ * @returns {Promise<Object|null>}
+ */
+export const getUserDataForUser = async (username) => {
+  try {
+    const key = `${STORAGE_KEYS.USER_DATA}_${username}`;
+    const userData = await SecureStore.getItemAsync(key);
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting user data for user:', error);
+    return null;
+  }
+};

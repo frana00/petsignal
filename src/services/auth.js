@@ -1,5 +1,5 @@
 import { createUser, validateCredentials } from './users';
-import { saveCredentials, saveUserData, clearAllData, getCredentials, getUserData } from '../utils/storage';
+import { saveCredentials, saveUserData, clearCredentials, getCredentials, getUserData, saveUserDataForUser, getUserDataForUser } from '../utils/storage';
 
 /**
  * Registers a new user
@@ -23,7 +23,7 @@ export const register = async (userData) => {
     };
     
     // Save user data locally for profile management
-    await saveUserData(completeUserData);
+    await saveUserDataForUser(userData.username, completeUserData);
     
     return newUser;
   } catch (error) {
@@ -44,16 +44,18 @@ export const login = async (username, password) => {
     // Validate credentials with the API
     const validationResult = await validateCredentials(username, password);
     
-    // Check if we have existing user data for this user
-    let existingUserData = await getUserData();
+    // Check if we have existing user data for this specific user
+    let existingUserData = await getUserDataForUser(username);
     
-    // Create complete user data - prefer existing data if available
+    console.log(`📱 Existing data for user ${username}:`, existingUserData);
+    
+    // Create complete user data - prefer existing data if available for this user
     const userData = {
       id: existingUserData?.id || 1,
       username: username,
-      email: existingUserData?.email || username + '@example.com',
+      email: existingUserData?.email || '', // Start empty for new users
       phoneNumber: existingUserData?.phoneNumber || '',
-      subscriptionEmail: existingUserData?.subscriptionEmail || existingUserData?.email || username + '@example.com',
+      subscriptionEmail: existingUserData?.subscriptionEmail || '', // Start empty for new users
       role: existingUserData?.role || 'USER',
       createdAt: existingUserData?.createdAt || new Date().toISOString(),
       lastLogin: new Date().toISOString(),
@@ -61,9 +63,9 @@ export const login = async (username, password) => {
     
     // Save credentials and user data
     await saveCredentials(username, password);
-    await saveUserData(userData);
+    await saveUserDataForUser(username, userData);
     
-    console.log(`✅ Login successful for user: ${username}`);
+    console.log(`✅ Login successful for user: ${username}`, userData);
     return userData;
   } catch (error) {
     console.log(`❌ Login failed for user: ${username}`, error.message);
@@ -77,7 +79,10 @@ export const login = async (username, password) => {
  */
 export const logout = async () => {
   try {
-    await clearAllData();
+    // Only clear credentials, keep user data for next login
+    // This allows users to see their profile data when they log back in
+    await clearCredentials();
+    console.log('✅ User logged out, credentials cleared');
   } catch (error) {
     console.error('Error during logout:', error);
     // Don't throw error for logout

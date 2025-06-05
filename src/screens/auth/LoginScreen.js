@@ -14,6 +14,7 @@ import { useAuth } from '../../context/AuthContext';
 import { validateLoginForm, hasFormErrors } from '../../utils/validation';
 import { COLORS } from '../../utils/constants';
 import { showDebugInfo, showConnectivityInfo, showStoredUserData } from '../../utils/debug';
+import { clearAllStoredData, getStorageDebugInfo, getUserDebugInfo, listAllStoredUsers } from '../../utils/testHelpers';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import Loading from '../../components/common/Loading';
@@ -159,6 +160,26 @@ const LoginScreen = ({ navigation }) => {
                   <Text style={styles.debugButtonText}>📱 Datos</Text>
                 </TouchableOpacity>
               </View>
+              <View style={styles.debugButtons}>
+                <TouchableOpacity 
+                  style={[styles.debugButton, styles.clearButton]} 
+                  onPress={() => clearAllStoredData().then(() => Alert.alert('Debug', 'Datos borrados'))}
+                >
+                  <Text style={styles.debugButtonText}>🗑️ Limpiar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.debugButton} 
+                  onPress={() => getStorageDebugInfo()}
+                >
+                  <Text style={styles.debugButtonText}>🔍 Storage</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.debugButton} 
+                  onPress={() => listAllStoredUsers()}
+                >
+                  <Text style={styles.debugButtonText}>👥 Users</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
         </View>
@@ -249,6 +270,10 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     borderWidth: 1,
     borderColor: COLORS.lightGray,
+  },
+  clearButton: {
+    backgroundColor: '#ffe6e6',
+    borderColor: '#ffcccc',
   },
   debugButtonText: {
     fontSize: 12,

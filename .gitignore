@@ -49,6 +49,12 @@ src/utils/network.config.js
 *.log
 logs/
 
+# Debug and testing files
+SOLUTION_SUMMARY.md
+TESTING_GUIDE.md
+debug_profile.js
+src/utils/testHelpers.js
+
 # Runtime data
 pids/
 *.pid

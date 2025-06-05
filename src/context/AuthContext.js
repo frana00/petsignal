@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import * as authService from '../services/auth';
+import { getUserData, saveUserData, saveUserDataForUser, getCredentials } from '../utils/storage';
 
 // Initial state
 const initialState = {
@@ -136,8 +137,27 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const updateUser = (userData) => {
-    dispatch({ type: AUTH_ACTIONS.UPDATE_USER, payload: userData });
+  const updateUser = async (userData) => {
+    try {
+      // Update the context state
+      dispatch({ type: AUTH_ACTIONS.UPDATE_USER, payload: userData });
+      
+      // Also save to local storage to persist between sessions
+      const currentUserData = await getUserData();
+      const credentials = await getCredentials();
+      
+      if (currentUserData && credentials) {
+        const updatedUserData = { ...currentUserData, ...userData };
+        
+        // Save both globally and for specific user
+        await saveUserData(updatedUserData);
+        await saveUserDataForUser(credentials.username, updatedUserData);
+        
+        console.log('📱 Updated user data saved to storage:', updatedUserData);
+      }
+    } catch (error) {
+      console.error('Error updating user data:', error);
+    }
   };
 
   const clearError = () => {

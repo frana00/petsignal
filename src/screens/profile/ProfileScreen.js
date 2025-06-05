@@ -52,6 +52,11 @@ const ProfileScreen = ({ navigation }) => {
       const storedUserData = await getUserData();
       const credentials = await getCredentials();
       
+      console.log('📱 ProfileScreen - Loading user data:');
+      console.log('  - Stored data:', storedUserData);
+      console.log('  - Credentials:', credentials ? { username: credentials.username } : 'None');
+      console.log('  - Context user:', user);
+      
       if (!credentials) {
         throw new Error('No se encontraron credenciales');
       }
@@ -59,23 +64,38 @@ const ProfileScreen = ({ navigation }) => {
       // Use stored user data if available, otherwise use data from AuthContext
       let currentUserData;
       if (storedUserData) {
-        currentUserData = {
-          id: storedUserData.id || 1,
-          username: credentials.username,
-          email: storedUserData.email || user?.email || credentials.username + '@example.com',
-          phoneNumber: storedUserData.phoneNumber || user?.phoneNumber || '',
-          subscriptionEmail: storedUserData.subscriptionEmail || storedUserData.email || user?.email || credentials.username + '@example.com',
-          role: storedUserData.role || 'USER',
-          createdAt: storedUserData.createdAt || new Date().toISOString(),
-        };
+        // Verify the stored data belongs to the current user
+        if (storedUserData.username === credentials.username) {
+          currentUserData = {
+            id: storedUserData.id || 1,
+            username: credentials.username,
+            email: storedUserData.email || '',
+            phoneNumber: storedUserData.phoneNumber || '',
+            subscriptionEmail: storedUserData.subscriptionEmail || '',
+            role: storedUserData.role || 'USER',
+            createdAt: storedUserData.createdAt || new Date().toISOString(),
+          };
+        } else {
+          console.log('⚠️ Stored data username mismatch! Stored:', storedUserData.username, 'Current:', credentials.username);
+          // Create fresh user data for this user
+          currentUserData = {
+            id: 1,
+            username: credentials.username,
+            email: '',
+            phoneNumber: '',
+            subscriptionEmail: '',
+            role: 'USER',
+            createdAt: new Date().toISOString(),
+          };
+        }
       } else {
-        // Fallback to context data or create from credentials
+        // Fallback to context data or create minimal user data (no mock emails)
         currentUserData = {
           id: 1,
           username: credentials.username,
-          email: user?.email || credentials.username + '@example.com',
+          email: user?.email || '',
           phoneNumber: user?.phoneNumber || '',
-          subscriptionEmail: user?.subscriptionEmail || user?.email || credentials.username + '@example.com',
+          subscriptionEmail: user?.subscriptionEmail || '',
           role: 'USER',
           createdAt: new Date().toISOString(),
         };
