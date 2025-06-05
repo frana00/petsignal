@@ -8,7 +8,7 @@ Una aplicación móvil para gestionar alertas de mascotas perdidas y encontradas
 - **Alertas Completas**: Creación y gestión de alertas de mascotas perdidas y encontradas
   - Formulario completo con todos los campos requeridos
   - Subida de múltiples fotos (hasta 5)
-  - Geolocalización automática y manual
+  - Campos de ubicación manual (ubicación y código postal)
   - Campos específicos: chip, raza, color, edad, etc.
 - **Interfaz Optimizada**: 
   - Selector de fecha personalizado para web y móvil
@@ -26,8 +26,7 @@ Una aplicación móvil para gestionar alertas de mascotas perdidas y encontradas
 - Axios (cliente HTTP)
 - Expo SecureStore (almacenamiento seguro)
 - Expo ImagePicker (selección de fotos)
-- React Native Geolocation (ubicación)
-- React Native Date Picker (fechas multiplataforma)
+- Custom Date Picker (fechas multiplataforma)
 
 ## 🛠️ Instalación y Configuración
 
@@ -100,7 +99,7 @@ Una aplicación móvil para gestionar alertas de mascotas perdidas y encontradas
 - Selector de fecha personalizado que funciona en web y móvil
 - Selector de fotos con vista previa (máximo 5 fotos)
 - Validación de campos obligatorios
-- Geolocalización automática y manual
+- Campos de ubicación manual (ubicación y código postal)
 
 **Gestión de alertas:**
 - Creación de alertas con subida de fotos
@@ -182,12 +181,12 @@ Usa HTTP Basic Authentication con username/password.
 1. Asegurar que tu API backend esté ejecutándose
 2. Configurar `network.config.js` con tu IP local
 3. Ejecutar `npx expo start`
-4. **Permisos importantes**: La app requiere permisos de cámara y ubicación
+4. **Permisos importantes**: La app requiere permisos de cámara
 
 ### Para producción
 
 1. Actualizar `PRODUCTION_URL` en la configuración
-2. Configurar permisos en `app.json` para cámara y ubicación
+2. Configurar permisos en `app.json` para cámara
 3. Construir con `expo build`
 4. Publicar en stores correspondientes
 
@@ -195,8 +194,7 @@ Usa HTTP Basic Authentication con username/password.
 
 La aplicación requiere los siguientes permisos:
 - **Cámara**: Para tomar fotos de mascotas
-- **Galería**: Para seleccionar fotos existentes  
-- **Ubicación**: Para geolocalizar alertas automáticamente
+- **Galería**: Para seleccionar fotos existentes
 
 ## 🔒 Seguridad
 
