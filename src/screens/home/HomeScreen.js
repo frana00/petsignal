@@ -41,6 +41,7 @@ const HomeScreen = ({ navigation }) => {
     refreshing, 
     filters,
     pagination,
+    alertCounts,
     refreshAlerts, 
     loadMoreAlerts, 
     filterByType, 
@@ -50,8 +51,19 @@ const HomeScreen = ({ navigation }) => {
   } = useAlert();
 
   useEffect(() => {
+    console.log('🏠 HomeScreen: Refreshing alerts on mount');
     refreshAlerts();
   }, []);
+
+  // Debug logging for alerts data
+  useEffect(() => {
+    console.log('🏠 HomeScreen: Alerts data changed');
+    console.log('📊 Alerts array:', alerts);
+    console.log('📏 Alerts length:', Array.isArray(alerts) ? alerts.length : 'Not an array');
+    console.log('🔍 Filters:', filters);
+    console.log('⏳ Loading:', loading);
+    console.log('❌ Error:', error);
+  }, [alerts, filters, loading, error]);
 
   const handleAlertPress = (alert) => {
     navigation.navigate('AlertDetail', { alertId: alert.id });
@@ -67,7 +79,15 @@ const HomeScreen = ({ navigation }) => {
 
   const renderFilterButton = (type, label, icon) => {
     const isActive = filters.type === type;
-    const count = type ? (getAlertsByType(type) || []).length : getFilteredCount();
+    // Use the new logic with alertCounts
+    let count;
+    if (!type) { // "Todos"
+      count = getFilteredCount();
+    } else if (isActive) { // Active filter button
+      count = (alerts || []).length;
+    } else { // Inactive filter button
+      count = alertCounts[type] || 0;
+    }
     
     return (
       <TouchableOpacity
@@ -126,17 +146,27 @@ const HomeScreen = ({ navigation }) => {
       {/* Stats Section */}
       <View style={styles.statsSection}>
         <View style={styles.statItem}>
-          <Text style={styles.statNumber}>{(getAlertsByType(ALERT_TYPES.LOST) || []).length}</Text>
+          <Text style={styles.statNumber}>
+            {filters.type === ALERT_TYPES.LOST 
+              ? (alerts || []).length 
+              : alertCounts[ALERT_TYPES.LOST] || 0}
+          </Text>
           <Text style={styles.statLabel}>Perdidos</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statItem}>
-          <Text style={styles.statNumber}>{(getAlertsByType(ALERT_TYPES.SEEN) || []).length}</Text>
+          <Text style={styles.statNumber}>
+            {filters.type === ALERT_TYPES.SEEN 
+              ? (alerts || []).length 
+              : alertCounts[ALERT_TYPES.SEEN] || 0}
+          </Text>
           <Text style={styles.statLabel}>Encontrados</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statItem}>
-          <Text style={styles.statNumber}>{getFilteredCount()}</Text>
+          <Text style={styles.statNumber}>
+            {alertCounts.total || 0}
+          </Text>
           <Text style={styles.statLabel}>Total</Text>
         </View>
       </View>

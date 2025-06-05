@@ -18,6 +18,12 @@ const initialState = {
     hasMore: true,
   },
   refreshing: false,
+  // Store counts for each type when no filter is applied
+  alertCounts: {
+    total: 0,
+    [ALERT_TYPES.LOST]: 0,
+    [ALERT_TYPES.SEEN]: 0,
+  },
 };
 
 // Action types
@@ -35,6 +41,7 @@ const ACTIONS = {
   RESET_PAGINATION: 'RESET_PAGINATION',
   INCREMENT_PAGE: 'INCREMENT_PAGE',
   CLEAR_ERROR: 'CLEAR_ERROR',
+  UPDATE_ALERT_COUNTS: 'UPDATE_ALERT_COUNTS',
 };
 
 // Reducer function
@@ -60,6 +67,12 @@ const alertReducer = (state, action) => {
           ...state.pagination,
           hasMore: Array.isArray(action.payload) ? action.payload.length === state.pagination.size : false,
         },
+        // Update counts only if no filter is active (showing all alerts)
+        alertCounts: !state.filters.type ? {
+          total: Array.isArray(action.payload) ? action.payload.length : 0,
+          [ALERT_TYPES.LOST]: Array.isArray(action.payload) ? action.payload.filter(alert => alert.type === ALERT_TYPES.LOST).length : 0,
+          [ALERT_TYPES.SEEN]: Array.isArray(action.payload) ? action.payload.filter(alert => alert.type === ALERT_TYPES.SEEN).length : 0,
+        } : state.alertCounts,
       };
     
     case ACTIONS.APPEND_ALERTS:
@@ -123,6 +136,9 @@ const alertReducer = (state, action) => {
     case ACTIONS.CLEAR_ERROR:
       return { ...state, error: null };
     
+    case ACTIONS.UPDATE_ALERT_COUNTS:
+      return { ...state, alertCounts: action.payload };
+    
     default:
       return state;
   }
@@ -182,7 +198,10 @@ export const AlertProvider = ({ children }) => {
         ...state.filters,
       };
 
+      console.log('📥 Loading alerts with options:', options);
       const alerts = await getAlerts(options);
+      console.log('📦 Received alerts data:', alerts);
+      console.log('📊 Number of alerts received:', Array.isArray(alerts) ? alerts.length : 'Not an array');
 
       if (refresh || page === 0) {
         dispatch({ type: ACTIONS.SET_ALERTS, payload: alerts });
@@ -190,6 +209,7 @@ export const AlertProvider = ({ children }) => {
         dispatch({ type: ACTIONS.APPEND_ALERTS, payload: alerts });
       }
     } catch (error) {
+      console.error('❌ Error loading alerts:', error);
       setError(error.message || 'Error al cargar alertas');
     }
   };
@@ -275,12 +295,22 @@ export const AlertProvider = ({ children }) => {
 
   // Get filtered alerts count
   const getFilteredCount = () => {
-    return (state.alerts || []).length;
+    // If there's a filter active, return the current alerts length
+    // If no filter, return the total count from alertCounts
+    if (state.filters.type) {
+      return (state.alerts || []).length;
+    }
+    return state.alertCounts.total;
   };
 
   // Get alerts by type
   const getAlertsByType = (type) => {
-    return (state.alerts || []).filter(alert => alert.type === type);
+    // If the current filter matches the requested type, return current alerts
+    if (state.filters.type === type) {
+      return state.alerts || [];
+    }
+    // If no filter or different filter, use the stored counts
+    return { length: state.alertCounts[type] || 0 };
   };
 
   // Load initial alerts when filters change
@@ -297,6 +327,7 @@ export const AlertProvider = ({ children }) => {
     filters: state.filters,
     pagination: state.pagination,
     refreshing: state.refreshing,
+    alertCounts: state.alertCounts,
 
     // Actions
     loadAlerts,

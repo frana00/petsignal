@@ -25,8 +25,24 @@ export const getAlerts = async (options = {}) => {
     params.status = options.status;
   }
 
+  console.log('🌐 Making API request to /alerts with params:', params);
   const response = await apiClient.get('/alerts', { params });
-  return response.data;
+  console.log('📡 API response for /alerts:', response.data);
+  
+  // Handle paginated response - extract content array
+  if (response.data && response.data.content && Array.isArray(response.data.content)) {
+    console.log('📋 Extracted alerts from paginated response:', response.data.content.length, 'alerts');
+    return response.data.content;
+  }
+  
+  // Fallback for non-paginated response
+  if (Array.isArray(response.data)) {
+    console.log('📋 Using direct array response:', response.data.length, 'alerts');
+    return response.data;
+  }
+  
+  console.warn('⚠️ Unexpected response format, returning empty array');
+  return [];
 };
 
 /**
