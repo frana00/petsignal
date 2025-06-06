@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,8 @@ const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2; // 2 columns with padding
 
 const AlertCard = ({ alert, onPress, style }) => {
+  const [imageError, setImageError] = useState(false);
+
   const getTypeColor = () => {
     return alert.type === ALERT_TYPES.LOST ? COLORS.primary : COLORS.secondary;
   };
@@ -23,6 +25,27 @@ const AlertCard = ({ alert, onPress, style }) => {
 
   const getStatusColor = () => {
     return alert.status === 'ACTIVE' ? getTypeColor() : COLORS.gray;
+  };
+
+  const getPhotoUrl = () => {
+    // First check if there's a single photoUrl (legacy support)
+    if (alert.photoUrl) {
+      return alert.photoUrl;
+    }
+    
+    // Then check if there are multiple photos and take the first one
+    if (alert.photoUrls && alert.photoUrls.length > 0) {
+      const firstPhoto = alert.photoUrls[0];
+      // Handle both presigned URL format and direct URL
+      return firstPhoto.presignedUrl || firstPhoto.url || firstPhoto;
+    }
+    
+    return null;
+  };
+
+  const handleImageError = () => {
+    console.warn('Failed to load image for alert:', alert.id);
+    setImageError(true);
   };
 
   const formatDate = (dateString) => {
@@ -60,11 +83,12 @@ const AlertCard = ({ alert, onPress, style }) => {
     >
       {/* Image */}
       <View style={styles.imageContainer}>
-        {alert.photoUrl ? (
+        {getPhotoUrl() && !imageError ? (
           <Image
-            source={{ uri: alert.photoUrl }}
+            source={{ uri: getPhotoUrl() }}
             style={styles.image}
             resizeMode="cover"
+            onError={handleImageError}
           />
         ) : (
           <View style={[styles.imagePlaceholder, { backgroundColor: getTypeColor() + '20' }]}>
