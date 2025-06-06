@@ -91,16 +91,49 @@ const AlertForm = ({
 
       const parsedFields = parseDescriptionFields(initialData.description);
       
+      // Use default form structure instead of current formData to avoid loops
+      const defaultFormData = {
+        type: ALERT_TYPES.LOST,
+        title: '',
+        petName: '',
+        breed: '',
+        color: '',
+        sex: PET_SEX.UNKNOWN,
+        age: '',
+        size: 'MEDIUM',
+        description: '',
+        location: '',
+        postalCode: '',
+        countryCode: 'ES',
+        contactPhone: '',
+        contactEmail: user?.email || '',
+        date: new Date(),
+        reward: '',
+        chipNumber: '',
+      };
+      
       setFormData({
-        ...formData,
+        ...defaultFormData,
         ...initialData,
         ...parsedFields, // Override with parsed fields from description
         date: initialData.date ? new Date(initialData.date) : new Date(),
         // Ensure email is populated
         contactEmail: parsedFields.contactEmail || initialData.contactEmail || user?.email || '',
       });
+      
+      console.log('🔄 LOADING INITIAL DATA FOR EDIT:', {
+        initialDataExists: !!initialData,
+        parsedFields,
+        finalFormData: {
+          ...defaultFormData,
+          ...initialData,
+          ...parsedFields,
+          date: initialData.date ? new Date(initialData.date) : new Date(),
+          contactEmail: parsedFields.contactEmail || initialData.contactEmail || user?.email || '',
+        }
+      });
     }
-  }, [initialData]);
+  }, [initialData, user?.email]);
 
   // Continuously validate form to update button state
   useEffect(() => {
@@ -156,8 +189,27 @@ const AlertForm = ({
         newErrors.reward = 'La recompensa debe ser un número válido';
       }
 
+      setErrors(newErrors);
       const isValid = Object.keys(newErrors).length === 0;
       setIsFormValid(isValid);
+      
+      // DEBUG: Log validation state
+      console.log('🔍 FORM VALIDATION:', {
+        isValid,
+        errorsCount: Object.keys(newErrors).length,
+        errors: newErrors,
+        formData: {
+          title: formData.title,
+          breed: formData.breed,
+          color: formData.color,
+          description: formData.description,
+          location: formData.location,
+          contactPhone: formData.contactPhone,
+          countryCode: formData.countryCode,
+          petName: formData.petName,
+          type: formData.type
+        }
+      });
      };
     
     checkFormValidity();
@@ -597,6 +649,22 @@ const AlertForm = ({
 
       {/* Submit Button */}
       <View style={styles.submitContainer}>
+        {/* DEBUG INFO - REMOVER DESPUÉS */}
+        <View style={{ backgroundColor: '#f0f0f0', padding: 10, marginBottom: 10, borderRadius: 5 }}>
+          <Text style={{ fontSize: 12, color: '#666' }}>DEBUG:</Text>
+          <Text style={{ fontSize: 12, color: '#666' }}>MODE: {initialData ? 'EDIT' : 'CREATE'}</Text>
+          <Text style={{ fontSize: 12, color: '#666' }}>isFormValid: {isFormValid ? 'TRUE' : 'FALSE'}</Text>
+          <Text style={{ fontSize: 12, color: '#666' }}>loading: {loading ? 'TRUE' : 'FALSE'}</Text>
+          <Text style={{ fontSize: 12, color: '#666' }}>disabled: {(!isFormValid || loading) ? 'TRUE' : 'FALSE'}</Text>
+          <Text style={{ fontSize: 12, color: '#666' }}>errors: {Object.keys(errors).length}</Text>
+          <Text style={{ fontSize: 12, color: '#666' }}>initialData: {initialData ? 'EXISTS' : 'NULL'}</Text>
+          <Text style={{ fontSize: 12, color: '#666' }}>hasRequiredFields: {
+            formData.title && formData.breed && formData.color && formData.description && 
+            formData.location && formData.contactPhone && formData.countryCode &&
+            (formData.type !== ALERT_TYPES.LOST || formData.petName) ? 'TRUE' : 'FALSE'
+          }</Text>
+        </View>
+        
         <Button
           title={initialData ? 'Actualizar Alerta' : 'Crear Alerta'}
           onPress={handleSubmit}
@@ -604,6 +672,16 @@ const AlertForm = ({
           disabled={!isFormValid || loading}
           style={styles.submitButton}
         />
+        
+        {/* Show errors if any */}
+        {!isFormValid && Object.keys(errors).length > 0 && (
+          <View style={styles.errorSummary}>
+            <Text style={styles.errorSummaryTitle}>Completa los siguientes campos:</Text>
+            {Object.entries(errors).map(([field, error]) => (
+              <Text key={field} style={styles.errorSummaryItem}>• {error}</Text>
+            ))}
+          </View>
+        )}
       </View>
 
       {/* Date Picker Modal */}
@@ -696,10 +774,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    paddingBottom: 120, // Increased bottom padding for submit button visibility
+    paddingBottom: 150, // Increased for submit button visibility
   },
   scrollContent: {
-    paddingBottom: 50, // Additional padding for scroll content
+    paddingBottom: 80, // Additional padding for scroll content
+    flexGrow: 1, // Ensure scroll content can expand
   },
   section: {
     marginBottom: 24,
@@ -806,12 +885,14 @@ const styles = StyleSheet.create({
   },
   submitContainer: {
     marginTop: 32,
-    marginBottom: 60, // Increased bottom margin for better visibility
+    marginBottom: 100, // Increased for better visibility
     paddingHorizontal: 8,
+    paddingBottom: 20, // Added extra padding
   },
   submitButton: {
     paddingVertical: 18,
     borderRadius: 12,
+    minHeight: 56, // Ensure minimum touch target
   },
   
   // Date picker styles
@@ -949,6 +1030,25 @@ const styles = StyleSheet.create({
   },
   photoPickerContainer: {
     marginTop: 12,
+  },
+  errorSummary: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: COLORS.error + '10',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.error,
+  },
+  errorSummaryTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.error,
+    marginBottom: 8,
+  },
+  errorSummaryItem: {
+    fontSize: 12,
+    color: COLORS.error,
+    marginBottom: 4,
   },
 });
 

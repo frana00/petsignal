@@ -198,10 +198,7 @@ export const AlertProvider = ({ children }) => {
         ...state.filters,
       };
 
-      console.log('📥 Loading alerts with options:', options);
       const alerts = await getAlerts(options);
-      console.log('📦 Received alerts data:', alerts);
-      console.log('📊 Number of alerts received:', Array.isArray(alerts) ? alerts.length : 'Not an array');
 
       if (refresh || page === 0) {
         dispatch({ type: ACTIONS.SET_ALERTS, payload: alerts });
@@ -209,7 +206,6 @@ export const AlertProvider = ({ children }) => {
         dispatch({ type: ACTIONS.APPEND_ALERTS, payload: alerts });
       }
     } catch (error) {
-      console.error('❌ Error loading alerts:', error);
       setError(error.message || 'Error al cargar alertas');
     }
   };
@@ -246,9 +242,11 @@ export const AlertProvider = ({ children }) => {
       setLoading(true);
       const newAlert = await createAlert(alertData);
       dispatch({ type: ACTIONS.ADD_ALERT, payload: newAlert });
+      setLoading(false); // Add this line
       return newAlert;
     } catch (error) {
       setError(error.message || 'Error al crear alerta');
+      setLoading(false); // Add this line
       throw error;
     }
   };
@@ -259,9 +257,11 @@ export const AlertProvider = ({ children }) => {
       setLoading(true);
       const updatedAlert = await updateAlert(alertId, alertData);
       dispatch({ type: ACTIONS.UPDATE_ALERT, payload: updatedAlert });
+      setLoading(false); // Add this line
       return updatedAlert;
     } catch (error) {
       setError(error.message || 'Error al actualizar alerta');
+      setLoading(false); // Add this line
       throw error;
     }
   };
