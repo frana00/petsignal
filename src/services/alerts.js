@@ -58,7 +58,8 @@ export const getAlertById = async (alertId) => {
 /**
  * Creates a new alert
  * @param {Object} alertData - Alert data
- * @returns {Promise<Object>} - Created alert data
+ * @param {Array<string>} alertData.photoFilenames - Optional array of photo filenames to associate
+ * @returns {Promise<Object>} - Created alert data with photoUrls if photos were included
  */
 export const createAlert = async (alertData) => {
   // Clean up undefined values to avoid sending them as null
@@ -76,6 +77,7 @@ export const createAlert = async (alertData) => {
   
   console.log('📤 Creating alert with data:', cleanData);
   console.log('🔍 Debug: username in alert data:', cleanData.username);
+  console.log('🔍 Debug: photoFilenames in alert data:', cleanData.photoFilenames);
   console.log('🔍 Debug: all keys in alert data:', Object.keys(cleanData));
   
   // Final validation before sending
@@ -85,6 +87,14 @@ export const createAlert = async (alertData) => {
   }
   
   const response = await apiClient.post('/alerts', cleanData);
+  
+  console.log('📥 Created alert response:', response.data);
+  
+  // Check if response includes photoUrls (presigned URLs for upload)
+  if (response.data.photoUrls && response.data.photoUrls.length > 0) {
+    console.log('📸 Alert created with', response.data.photoUrls.length, 'photo upload URLs');
+  }
+  
   return response.data;
 };
 

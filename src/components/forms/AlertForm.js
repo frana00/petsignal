@@ -10,10 +10,11 @@ import {
   Image,
 } from 'react-native';
 import { COLORS, ALERT_TYPES, PET_SEX } from '../../utils/constants';
+import { useAuth } from '../../context/AuthContext';
 import Input from '../common/Input';
 import Button from '../common/Button';
 import ErrorMessage from '../common/ErrorMessage';
-import { showImagePicker } from '../../services/photos';
+import { PhotoPicker } from '../photos';
 
 // Note: Temporarily removed react-native-date-picker due to NativeEventEmitter issues
 // Will use platform-specific date picker implementations
@@ -24,6 +25,8 @@ const AlertForm = ({
   loading = false,
   style 
 }) => {
+  const { user } = useAuth();
+  
   const [formData, setFormData] = useState({
     type: ALERT_TYPES.LOST,
     title: '',
@@ -38,7 +41,7 @@ const AlertForm = ({
     postalCode: '',
     countryCode: 'ES',
     contactPhone: '',
-    contactEmail: '',
+    contactEmail: user?.email || '', // Auto-complete with user email
     date: new Date(),
     reward: '',
     chipNumber: '',
@@ -47,17 +50,118 @@ const AlertForm = ({
   const [errors, setErrors] = useState({});
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedPhotos, setSelectedPhotos] = useState([]);
+  const [isFormValid, setIsFormValid] = useState(false);
 
   // Load initial data if editing
   useEffect(() => {
     if (initialData) {
+      // Parse description to extract additional fields that might be embedded
+      const parseDescriptionFields = (description) => {
+        const fields = {};
+        if (description) {
+          const lines = description.split('\n');
+          lines.forEach(line => {
+            if (line.includes('Nombre:')) {
+              fields.petName = line.replace('Nombre:', '').trim();
+            }
+            if (line.includes('Color:')) {
+              fields.color = line.replace('Color:', '').trim();
+            }
+            if (line.includes('Edad:')) {
+              const ageMatch = line.match(/Edad:\s*(\d+)/);
+              if (ageMatch) fields.age = ageMatch[1];
+            }
+            if (line.includes('Ubicación específica:')) {
+              fields.location = line.replace('Ubicación específica:', '').trim();
+            }
+            if (line.includes('Contacto:')) {
+              fields.contactPhone = line.replace('Contacto:', '').trim();
+            }
+            if (line.includes('Email:')) {
+              fields.contactEmail = line.replace('Email:', '').trim();
+            }
+            if (line.includes('Recompensa:')) {
+              const rewardMatch = line.match(/Recompensa:\s*\$?(\d+)/);
+              if (rewardMatch) fields.reward = rewardMatch[1];
+            }
+          });
+        }
+        return fields;
+      };
+
+      const parsedFields = parseDescriptionFields(initialData.description);
+      
       setFormData({
         ...formData,
         ...initialData,
+        ...parsedFields, // Override with parsed fields from description
         date: initialData.date ? new Date(initialData.date) : new Date(),
+        // Ensure email is populated
+        contactEmail: parsedFields.contactEmail || initialData.contactEmail || user?.email || '',
       });
     }
   }, [initialData]);
+
+  // Continuously validate form to update button state
+  useEffect(() => {
+    const checkFormValidity = () => {
+      const newErrors = {};
+
+      if (!formData.title.trim()) {
+        newErrors.title = 'El título de la alerta es requerido';
+      }
+
+      // Para alertas de tipo LOST, el nombre es requerido
+      if (formData.type === ALERT_TYPES.LOST) {
+        if (!formData.petName.trim()) {
+          newErrors.petName = 'El nombre de la mascota es requerido para mascotas perdidas';
+        }
+      }
+
+      if (!formData.breed.trim()) {
+        newErrors.breed = 'La raza es requerida';
+      }
+
+      if (!formData.color.trim()) {
+        newErrors.color = 'El color es requerido';
+      }
+
+      if (!formData.description.trim()) {
+        newErrors.description = 'La descripción es requerida';
+      }
+
+      if (!formData.location.trim()) {
+        newErrors.location = 'La ubicación es requerida';
+      }
+
+      if (!formData.countryCode.trim()) {
+        newErrors.countryCode = 'El código del país es requerido';
+      }
+
+      if (!formData.contactPhone.trim()) {
+        newErrors.contactPhone = 'El teléfono de contacto es requerido';
+      }
+
+      // POSTAL CODE IS NOT MANDATORY - only validate format if provided
+      if (formData.postalCode && formData.postalCode.trim() && !/^\d{4,6}$/.test(formData.postalCode.trim())) {
+        newErrors.postalCode = 'Si proporcionas código postal, debe tener entre 4 y 6 dígitos';
+      }
+
+      // Optional field validations
+      if (formData.age && (isNaN(formData.age) || formData.age < 0)) {
+        newErrors.age = 'La edad debe ser un número válido';
+      }
+
+      if (formData.reward && (isNaN(formData.reward) || formData.reward < 0)) {
+        newErrors.reward = 'La recompensa debe ser un número válido';
+      }
+
+      const isValid = Object.keys(newErrors).length === 0;
+      setIsFormValid(isValid);
+     };
+    
+    checkFormValidity();
+  }, [formData]);
 
   const updateField = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -74,8 +178,7 @@ const AlertForm = ({
       newErrors.title = 'El título de la alerta es requerido';
     }
 
-    // Para alertas de tipo FOUND/SEEN, el nombre y edad no son obligatorios
-    // ya que no se puede conocer si la mascota no tiene identificación
+    // Para alertas de tipo LOST, el nombre es requerido
     if (formData.type === ALERT_TYPES.LOST) {
       if (!formData.petName.trim()) {
         newErrors.petName = 'El nombre de la mascota es requerido para mascotas perdidas';
@@ -98,9 +201,8 @@ const AlertForm = ({
       newErrors.location = 'La ubicación es requerida';
     }
 
-    // El código postal es opcional para permitir casos donde no se conoce la ubicación exacta
-    // especialmente para mascotas vistas donde solo se tiene una ubicación aproximada
-    if (formData.postalCode.trim() && !/^\d{4,6}$/.test(formData.postalCode.trim())) {
+    // POSTAL CODE IS NOT MANDATORY - only validate format if provided
+    if (formData.postalCode && formData.postalCode.trim() && !/^\d{4,6}$/.test(formData.postalCode.trim())) {
       newErrors.postalCode = 'Si proporcionas código postal, debe tener entre 4 y 6 dígitos';
     }
 
@@ -184,8 +286,11 @@ const AlertForm = ({
         // Campos opcionales del backend
         chipNumber: formData.chipNumber || undefined,
         
-        // Fotos
-        photoFilenames: selectedPhotos.map(photo => photo.fileName || 'photo.jpg'),
+        // Fotos - incluir solo si hay fotos seleccionadas
+        ...(selectedPhotos.length > 0 && {
+          photoFilenames: selectedPhotos.map(photo => photo.filename || `photo_${Date.now()}.jpg`),
+          photos: selectedPhotos, // Para el procesamiento posterior
+        }),
         
         // Usar postal code válido del backend - según documentación del backend, "04001" es un código válido
         // Si el usuario proporcionó un código postal, lo agregamos a la descripción
@@ -210,19 +315,14 @@ const AlertForm = ({
     });
   };
 
-  const handleAddPhoto = async () => {
-    try {
-      const result = await showImagePicker();
-      if (result) {
-        setSelectedPhotos(prev => [...prev, result]);
-      }
-    } catch (error) {
-      Alert.alert('Error', 'No se pudo seleccionar la imagen');
-    }
-  };
-
-  const handleRemovePhoto = (index) => {
-    setSelectedPhotos(prev => prev.filter((_, i) => i !== index));
+  // Handle photo selection from PhotoPicker
+  const handlePhotosSelected = ({ images, descriptions }) => {
+    const photosWithDescriptions = images.map((image, index) => ({
+      ...image,
+      description: descriptions[index] || '',
+      filename: image.filename || `photo_${Date.now()}_${index}.jpg`,
+    }));
+    setSelectedPhotos(photosWithDescriptions);
   };
 
   return (
@@ -483,27 +583,16 @@ const AlertForm = ({
       {/* Photos Section */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Fotos (opcional)</Text>
+        <Text style={styles.helperText}>
+          Agrega fotos para que sea más fácil identificar a la mascota
+        </Text>
         
-        <View style={styles.photosContainer}>
-          {selectedPhotos.map((photo, index) => (
-            <View key={index} style={styles.photoItem}>
-              <Image source={{ uri: photo.uri }} style={styles.photoImage} />
-              <TouchableOpacity
-                style={styles.photoRemoveButton}
-                onPress={() => handleRemovePhoto(index)}
-              >
-                <Text style={styles.photoRemoveButtonText}>✖</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-
-          <TouchableOpacity
-            style={styles.addPhotoButton}
-            onPress={handleAddPhoto}
-          >
-            <Text style={styles.addPhotoButtonText}>+ Agregar Foto</Text>
-          </TouchableOpacity>
-        </View>
+        <PhotoPicker
+          onPhotosSelected={handlePhotosSelected}
+          maxPhotos={5}
+          uploadImmediately={false} // For new alerts, don't upload immediately
+          style={styles.photoPickerContainer}
+        />
       </View>
 
       {/* Submit Button */}
@@ -512,6 +601,7 @@ const AlertForm = ({
           title={initialData ? 'Actualizar Alerta' : 'Crear Alerta'}
           onPress={handleSubmit}
           loading={loading}
+          disabled={!isFormValid || loading}
           style={styles.submitButton}
         />
       </View>
@@ -851,24 +941,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
-  addPhotoButton: {
-    flex: 1,
-    paddingVertical: 12,
-    backgroundColor: COLORS.primary,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  addPhotoButtonText: {
-    color: COLORS.white,
-    fontWeight: '500',
-    fontSize: 16,
-  },
   helperText: {
     fontSize: 12,
     color: COLORS.gray,
     marginTop: 4,
     fontStyle: 'italic',
+  },
+  photoPickerContainer: {
+    marginTop: 12,
   },
 });
 

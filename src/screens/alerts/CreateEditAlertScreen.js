@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAlert } from '../../context/AlertContext';
 import { useAuth } from '../../context/AuthContext';
-import { uploadMultiplePhotos } from '../../services/photos';
+import { uploadToS3 } from '../../services/photos';
 import { COLORS } from '../../utils/constants';
 import AlertForm from '../../components/forms/AlertForm';
 import Button from '../../components/common/Button';
@@ -75,34 +75,88 @@ const CreateEditAlertScreen = ({ route, navigation }) => {
         Alert.alert('Éxito', 'Alerta actualizada correctamente');
         navigation.goBack();
       } else {
-        // Create new alert
-        const newAlert = await createNewAlert(alertFormData);
+        // Create new alert - use the new flow with photoFilenames
+        console.log('📸 Creating alert with photos:', photos?.length || 0);
         
+        const newAlert = await createNewAlert(alertFormData);
+        console.log('✅ Alert created successfully:', newAlert.id);
+        
+        // Handle photos using the new S3 presigned URL flow
         if (photos && photos.length > 0) {
-          // Upload photos after alert creation
           try {
-            // Convert photos to the format expected by uploadMultiplePhotos
-            const photosToUpload = photos.map((photo, index) => ({
-              uri: photo.uri,
-              description: photo.description || `Foto ${index + 1}`,
-            }));
+            console.log('📸 Processing', photos.length, 'photos for upload to S3');
             
-            await uploadMultiplePhotos(photosToUpload, newAlert.id);
-            
-            Alert.alert(
-              'Éxito',
-              `Alerta creada correctamente con ${photos.length} foto(s).`,
-              [
-                {
-                  text: 'Ver alerta',
-                  onPress: () => navigation.replace('AlertDetail', { alertId: newAlert.id }),
-                },
-                {
-                  text: 'Ir al inicio',
-                  onPress: () => navigation.navigate('Home'),
-                },
-              ]
-            );
+            // Check if the alert creation response includes photoUrls
+            if (newAlert.photoUrls && newAlert.photoUrls.length > 0) {
+              console.log('📥 Received', newAlert.photoUrls.length, 'presigned URLs from backend');
+              
+              // Upload each photo directly to S3 using presigned URLs
+              const uploadPromises = photos.map(async (photo, index) => {
+                const photoUrl = newAlert.photoUrls[index];
+                if (photoUrl && photoUrl.presignedUrl) {
+                  console.log(`📤 Uploading photo ${index + 1} to S3...`);
+                  await uploadToS3(photo.uri, photoUrl.presignedUrl);
+                  return { success: true, s3ObjectKey: photoUrl.s3ObjectKey };
+                } else {
+                  console.error(`❌ No presigned URL for photo ${index + 1}`);
+                  return { success: false, error: 'No presigned URL' };
+                }
+              });
+              
+              const uploadResults = await Promise.all(uploadPromises);
+              const successCount = uploadResults.filter(r => r.success).length;
+              const failureCount = uploadResults.length - successCount;
+              
+              console.log(`📊 Upload results: ${successCount} success, ${failureCount} failed`);
+              
+              if (failureCount > 0) {
+                Alert.alert(
+                  'Alerta creada',
+                  `La alerta se creó correctamente. ${successCount} de ${photos.length} foto(s) se subieron exitosamente.`,
+                  [
+                    {
+                      text: 'Ver alerta',
+                      onPress: () => navigation.replace('AlertDetail', { alertId: newAlert.id }),
+                    },
+                    {
+                      text: 'Ir al inicio',
+                      onPress: () => navigation.navigate('Home'),
+                    },
+                  ]
+                );
+              } else {
+                Alert.alert(
+                  'Éxito',
+                  `Alerta creada correctamente con ${photos.length} foto(s).`,
+                  [
+                    {
+                      text: 'Ver alerta',
+                      onPress: () => navigation.replace('AlertDetail', { alertId: newAlert.id }),
+                    },
+                    {
+                      text: 'Ir al inicio',
+                      onPress: () => navigation.navigate('Home'),
+                    },
+                  ]
+                );
+              }
+            } else {
+              console.warn('⚠️ No photoUrls in alert creation response, but photos were provided');
+              Alert.alert(
+                'Alerta creada',
+                'La alerta se creó correctamente, pero las fotos no se pudieron procesar. Puedes intentar subirlas más tarde.',
+                [
+                  {
+                    text: 'Ver alerta',
+                    onPress: () => navigation.replace('AlertDetail', { alertId: newAlert.id }),
+                  },
+                  {
+                    text: 'Ir al inicio',
+                    onPress: () => navigation.navigate('Home'),
+                  },
+                ]
+              );
+            }
           } catch (photoError) {
             console.error('Photo upload error:', photoError);
             Alert.alert(

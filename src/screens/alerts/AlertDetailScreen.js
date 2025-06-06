@@ -12,11 +12,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAlert } from '../../context/AlertContext';
 import { useAuth } from '../../context/AuthContext';
-import { getAlertPhotos } from '../../services/photos';
+import { getAlertPhotos, uploadMultiplePhotos } from '../../services/photos';
 import { COLORS, ALERT_TYPES, PET_SEX } from '../../utils/constants';
 import Loading from '../../components/common/Loading';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import PhotoGallery from '../../components/photos/PhotoGallery';
+import PhotoPicker from '../../components/photos/PhotoPicker';
 import Button from '../../components/common/Button';
 
 const AlertDetailScreen = ({ route, navigation }) => {
@@ -25,6 +26,7 @@ const AlertDetailScreen = ({ route, navigation }) => {
   const { user } = useAuth();
   const [photos, setPhotos] = useState([]);
   const [loadingPhotos, setLoadingPhotos] = useState(false);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
 
   useEffect(() => {
     if (alertId) {
@@ -120,6 +122,40 @@ Comparte para ayudar! 🐾`;
       alertId: currentAlert.id,
       alertData: currentAlert 
     });
+  };
+
+  const handlePhotoUpload = async (selectedPhotos) => {
+    if (!selectedPhotos || selectedPhotos.length === 0) {
+      return;
+    }
+
+    try {
+      setUploadingPhotos(true);
+      
+      // Upload photos using the batch upload function
+      const uploadResults = await uploadMultiplePhotos(selectedPhotos, alertId);
+      
+      const successCount = uploadResults.filter(r => r.uploaded).length;
+      const failureCount = uploadResults.length - successCount;
+      
+      if (failureCount > 0) {
+        Alert.alert(
+          'Fotos subidas parcialmente',
+          `${successCount} de ${selectedPhotos.length} foto(s) se subieron exitosamente.`
+        );
+      } else {
+        Alert.alert('Éxito', `${successCount} foto(s) subidas correctamente.`);
+      }
+      
+      // Reload photos to show the new ones
+      await loadPhotos();
+      
+    } catch (error) {
+      console.error('Error uploading photos:', error);
+      Alert.alert('Error', 'No se pudieron subir las fotos. Inténtalo de nuevo.');
+    } finally {
+      setUploadingPhotos(false);
+    }
   };
 
   const handleDelete = () => {
@@ -298,16 +334,48 @@ Comparte para ayudar! 🐾`;
         </View>
 
         {/* Photos */}
-        {(photos.length > 0 || loadingPhotos) && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Fotos</Text>
-            {loadingPhotos ? (
-              <Loading message="Cargando fotos..." />
-            ) : (
-              <PhotoGallery photos={photos} />
-            )}
-          </View>
-        )}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Fotos</Text>
+          
+          {loadingPhotos ? (
+            <Loading message="Cargando fotos..." />
+          ) : (
+            <>
+              {photos.length > 0 ? (
+                <PhotoGallery photos={photos} />
+              ) : (
+                <Text style={styles.noPhotosText}>
+                  {isAlertOwner() 
+                    ? "No has agregado fotos aún. Agrega algunas para ayudar a identificar a tu mascota." 
+                    : "No hay fotos disponibles para esta alerta."
+                  }
+                </Text>
+              )}
+              
+              {/* Photo management for alert owners */}
+              {isAlertOwner() && (
+                <View style={styles.photoManagementContainer}>
+                  <Text style={styles.photoManagementTitle}>
+                    {photos.length > 0 ? "Agregar más fotos" : "Agregar fotos"}
+                  </Text>
+                  <PhotoPicker
+                    alertId={alertId}
+                    onPhotosSelected={handlePhotoUpload}
+                    maxPhotos={5}
+                    existingPhotos={photos}
+                    uploadImmediately={true}
+                    style={styles.photoPickerContainer}
+                  />
+                  {uploadingPhotos && (
+                    <View style={styles.uploadingContainer}>
+                      <Loading message="Subiendo fotos..." />
+                    </View>
+                  )}
+                </View>
+              )}
+            </>
+          )}
+        </View>
 
         {/* Description */}
         <View style={styles.section}>
@@ -587,6 +655,34 @@ const styles = StyleSheet.create({
     color: COLORS.error,
     fontSize: 16,
     fontWeight: '600',
+  },
+  noPhotosText: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    paddingVertical: 20,
+  },
+  photoManagementContainer: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: COLORS.lightGray + '20',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.lightGray,
+  },
+  photoManagementTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 12,
+  },
+  photoPickerContainer: {
+    marginTop: 8,
+  },
+  uploadingContainer: {
+    marginTop: 12,
+    padding: 8,
   },
 });
 

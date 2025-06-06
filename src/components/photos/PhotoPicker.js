@@ -11,15 +11,17 @@ import {
   ScrollView,
 } from 'react-native';
 import { COLORS } from '../../utils/constants';
-import { showImagePicker, uploadPhoto } from '../../services/photos';
+import { showImagePicker, uploadToS3 } from '../../services/photos';
 import Button from '../common/Button';
 import Loading from '../common/Loading';
 
 const PhotoPicker = ({ 
   alertId, 
   onPhotoUploaded, 
+  onPhotosSelected,
   maxPhotos = 5,
   existingPhotos = [],
+  uploadImmediately = false, // New prop to control upload behavior
   style 
 }) => {
   const [selectedImages, setSelectedImages] = useState([]);
@@ -39,8 +41,21 @@ const PhotoPicker = ({
     try {
       const image = await showImagePicker();
       if (image) {
-        setSelectedImages(prev => [...prev, image]);
+        const newImage = {
+          ...image,
+          filename: `photo_${Date.now()}.jpg`,
+        };
+        
+        setSelectedImages(prev => [...prev, newImage]);
         setDescriptions(prev => [...prev, '']);
+        
+        // Notify parent component about photo selection
+        const updatedImages = [...selectedImages, newImage];
+        const updatedDescriptions = [...descriptions, ''];
+        onPhotosSelected?.({
+          images: updatedImages,
+          descriptions: updatedDescriptions,
+        });
       }
     } catch (error) {
       Alert.alert('Error', 'Error al seleccionar imagen');
@@ -48,15 +63,28 @@ const PhotoPicker = ({
   };
 
   const removeImage = (index) => {
-    setSelectedImages(prev => prev.filter((_, i) => i !== index));
-    setDescriptions(prev => prev.filter((_, i) => i !== index));
+    const newImages = selectedImages.filter((_, i) => i !== index);
+    const newDescriptions = descriptions.filter((_, i) => i !== index);
+    
+    setSelectedImages(newImages);
+    setDescriptions(newDescriptions);
+    
+    // Notify parent component
+    onPhotosSelected?.({
+      images: newImages,
+      descriptions: newDescriptions,
+    });
   };
 
   const updateDescription = (index, description) => {
-    setDescriptions(prev => {
-      const newDescriptions = [...prev];
-      newDescriptions[index] = description;
-      return newDescriptions;
+    const newDescriptions = [...descriptions];
+    newDescriptions[index] = description;
+    setDescriptions(newDescriptions);
+    
+    // Notify parent component
+    onPhotosSelected?.({
+      images: selectedImages,
+      descriptions: newDescriptions,
     });
   };
 
@@ -76,22 +104,36 @@ const PhotoPicker = ({
       return;
     }
 
+    if (!alertId) {
+      Alert.alert('Error', 'No se puede subir fotos sin un ID de alerta válido');
+      return;
+    }
+
     try {
       setUploading(true);
-      const uploadPromises = selectedImages.map((image, index) =>
-        uploadPhoto(image.uri, alertId, descriptions[index] || '')
-      );
-
-      const uploadedPhotos = await Promise.all(uploadPromises);
+      
+      // This function is only used when uploadImmediately is true
+      // For new alerts, photos should be included in the creation process
+      console.log('📤 Uploading photos for existing alert:', alertId);
+      
+      const { uploadMultiplePhotos } = await import('../../services/photos');
+      const photosWithDescriptions = selectedImages.map((image, index) => ({
+        uri: image.uri,
+        description: descriptions[index] || '',
+        filename: image.filename,
+      }));
+      
+      const uploadResults = await uploadMultiplePhotos(photosWithDescriptions, alertId);
       
       // Clear selected images
       setSelectedImages([]);
       setDescriptions([]);
       
       // Notify parent component
-      onPhotoUploaded?.(uploadedPhotos);
+      onPhotoUploaded?.(uploadResults);
       
-      Alert.alert('Éxito', 'Fotos subidas correctamente');
+      const successCount = uploadResults.filter(r => r.uploaded).length;
+      Alert.alert('Éxito', `${successCount} foto(s) subida(s) correctamente`);
     } catch (error) {
       Alert.alert('Error', error.message || 'Error al subir fotos');
     } finally {
@@ -161,8 +203,8 @@ const PhotoPicker = ({
         </ScrollView>
       )}
 
-      {/* Upload button */}
-      {selectedImages.length > 0 && (
+      {/* Upload button - only show for immediate upload mode (existing alerts) */}
+      {selectedImages.length > 0 && uploadImmediately && (
         <View style={styles.uploadContainer}>
           <Button
             title={`Subir ${selectedImages.length} foto${selectedImages.length > 1 ? 's' : ''}`}
