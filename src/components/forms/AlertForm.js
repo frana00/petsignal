@@ -526,7 +526,7 @@ const AlertForm = ({
                     styles.sexButtonText,
                     formData.sex === sex && styles.sexButtonTextActive
                   ]}>
-                    {sex === PET_SEX.MALE ? '♂' : sex === PET_SEX.FEMALE ? '♀' : '?'}
+                    {sex === PET_SEX.MALE ? 'Macho' : sex === PET_SEX.FEMALE ? 'Hembra' : 'No sé'}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -872,11 +872,15 @@ const styles = StyleSheet.create({
   sexSelector: {
     flexDirection: 'row',
     gap: 8,
+    justifyContent: 'space-between', // Distribute buttons evenly
   },
   sexButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    // width: 40, // Remove fixed width
+    // height: 40, // Remove fixed height
+    flex: 1, // Allow buttons to take available space
+    paddingVertical: 10, // Add padding for better touch area
+    paddingHorizontal: 5, // Add horizontal padding
+    borderRadius: 8, // Make it consistent with other buttons
     backgroundColor: COLORS.lightGray,
     justifyContent: 'center',
     alignItems: 'center',
@@ -885,8 +889,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   sexButtonText: {
-    fontSize: 18,
+    // fontSize: 18, // Adjust font size if needed
+    fontSize: 14, // Reduced font size for better fit
     color: COLORS.text,
+    textAlign: 'center', // Center text
   },
   sexButtonTextActive: {
     color: COLORS.white,

@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAlert } from '../../context/AlertContext';
 import { useAuth } from '../../context/AuthContext';
 import { getAlertPhotos, uploadMultiplePhotos } from '../../services/photos';
-import { COLORS, ALERT_TYPES, PET_SEX } from '../../utils/constants';
+import { COLORS, ALERT_TYPES, PET_SEX, PET_SIZE } from '../../utils/constants';
 import Loading from '../../components/common/Loading';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import PhotoGallery from '../../components/photos/PhotoGallery';
@@ -232,13 +232,66 @@ Comparte para ayudar! 🐾`;
     }
   };
 
-  const getSizeText = (size) => {
-    switch (size) {
-      case 'SMALL': return 'Pequeño';
-      case 'MEDIUM': return 'Mediano';
-      case 'LARGE': return 'Grande';
-      default: return 'No especificado';
+  const getSexText = (sexValue) => {
+    const upperSex = typeof sexValue === 'string' ? sexValue.trim().toUpperCase() : '';
+    switch (upperSex) {
+      case PET_SEX.MALE:
+        return 'Macho';
+      case PET_SEX.FEMALE:
+        return 'Hembra';
+      case PET_SEX.UNKNOWN:
+        return 'No sé / No especificado';
+      default:
+        return 'No especificado';
     }
+  };
+
+  const getSizeText = (size, description) => {
+    // Primero intentar usar el campo size si está disponible
+    if (size) {
+      const sizeValue = typeof size === 'string' ? size.toLowerCase() : size;
+      
+      switch (sizeValue) {
+        case PET_SIZE.SMALL:
+        case 'pequeño':
+        case 'pequeno': // Sin ñ para compatibilidad
+          return 'Pequeño';
+        case PET_SIZE.MEDIUM:
+        case 'mediano':
+          return 'Mediano';
+        case PET_SIZE.LARGE:
+        case 'grande':
+          return 'Grande';
+        default:
+          return size;
+      }
+    }
+    
+    // Si no hay size, intentar extraer del description
+    if (description) {
+      const sizeMatch = description.match(/Tamaño:\s*([^\n]+)/i);
+      if (sizeMatch) {
+        const extractedSize = sizeMatch[1].trim().toLowerCase();
+        
+        switch (extractedSize) {
+          case 'pequeño':
+          case 'pequeno':
+          case 'small':
+            return 'Pequeño';
+          case 'mediano':
+          case 'medium':
+            return 'Mediano';
+          case 'grande':
+          case 'large':
+            return 'Grande';
+          default:
+            // Capitalizar la primera letra del valor extraído
+            return extractedSize.charAt(0).toUpperCase() + extractedSize.slice(1);
+        }
+      }
+    }
+    
+    return 'No especificado';
   };
 
   if (loading && !currentAlert) {
@@ -358,7 +411,7 @@ Comparte para ayudar! 🐾`;
               {currentAlert.breed} • {currentAlert.color}
             </Text>
             <Text style={styles.petInfo}>
-              {getSexIcon(currentAlert.sex)} {getSizeText(currentAlert.size)}
+              {getSexText(currentAlert.sex)} {getSizeText(currentAlert.size, currentAlert.description)}
               {currentAlert.age && ` • ${currentAlert.age} años`}
             </Text>
           </View>

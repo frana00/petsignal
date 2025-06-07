@@ -35,6 +35,13 @@ export const PET_SEX = {
   UNKNOWN: 'UNKNOWN',
 };
 
+// Pet sizes
+export const PET_SIZE = {
+  SMALL: 'SMALL',
+  MEDIUM: 'MEDIUM',
+  LARGE: 'LARGE',
+};
+
 // Colors for UI
 export const COLORS = {
   primary: '#FF6B35',     // Orange for lost pets
