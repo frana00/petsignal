@@ -60,6 +60,21 @@ const HomeScreen = ({ navigation }) => {
     console.log('🏠 HomeScreen: Alerts data changed');
     console.log('📊 Alerts array:', alerts);
     console.log('📏 Alerts length:', Array.isArray(alerts) ? alerts.length : 'Not an array');
+    
+    // DEBUG: Log photo data for each alert
+    if (Array.isArray(alerts) && alerts.length > 0) {
+      console.log('🔍 Photo data analysis:');
+      alerts.forEach((alert, index) => {
+        console.log(`Alert ${index + 1} (ID: ${alert.id}):`);
+        console.log(`  - Has photoUrl: ${!!alert.photoUrl}`);
+        console.log(`  - Has photoUrls: ${!!alert.photoUrls}`);
+        console.log(`  - PhotoUrls length: ${alert.photoUrls ? alert.photoUrls.length : 0}`);
+        if (alert.photoUrls && alert.photoUrls.length > 0) {
+          console.log(`  - First photo:`, alert.photoUrls[0]);
+        }
+      });
+    }
+    
     console.log('🔍 Filters:', filters);
     console.log('⏳ Loading:', loading);
     console.log('❌ Error:', error);

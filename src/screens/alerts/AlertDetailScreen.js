@@ -309,19 +309,44 @@ Comparte para ayudar! 🐾`;
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Alert Type Badge */}
-        <View style={[styles.typeBadge, { backgroundColor: getTypeColor() }]}>
-          <Text style={styles.typeBadgeText}>
-            {currentAlert.type === ALERT_TYPES.LOST ? '🔍' : '👀'} {getTypeText()}
-          </Text>
+        {/* Alert Type Badge is now inside photosSection if photos exist */}
+
+        {/* Photos */}
+        <View style={styles.photosSection}>
+          {loadingPhotos ? (
+            <Loading message="Cargando fotos..." />
+          ) : (
+            <>
+              {photos.length > 0 ? (
+                <>
+                  {/* Alert Type Badge */}
+                  <View style={[styles.typeBadge, { backgroundColor: getTypeColor() }]}>
+                    <Text style={styles.typeBadgeText}>
+                      {currentAlert.type === ALERT_TYPES.LOST ? '🔍' : '👀'} {getTypeText()}
+                    </Text>
+                  </View>
+                  <PhotoGallery photos={photos} style={styles.photoGallery} />
+                </>
+              ) : (
+                <Text style={styles.noPhotosText}>
+                  {isAlertOwner() 
+                    ? "No has agregado fotos aún. Agrega algunas para ayudar a identificar a tu mascota." 
+                    : "No hay fotos disponibles para esta alerta."
+                  }
+                </Text>
+              )}
+            </>
+          )}
         </View>
 
-        {/* Pet Information */}
+        {/* Pet Name */}
         <View style={styles.section}>
           <Text style={styles.petName}>
             {currentAlert.title || 'Sin nombre'}
           </Text>
-          
+        </View>
+        {/* Pet Details */}
+        <View style={styles.section}>
           <View style={styles.petDetails}>
             <Text style={styles.petBreed}>
               {currentAlert.breed} • {currentAlert.color}
@@ -331,50 +356,6 @@ Comparte para ayudar! 🐾`;
               {currentAlert.age && ` • ${currentAlert.age} años`}
             </Text>
           </View>
-        </View>
-
-        {/* Photos */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Fotos</Text>
-          
-          {loadingPhotos ? (
-            <Loading message="Cargando fotos..." />
-          ) : (
-            <>
-              {photos.length > 0 ? (
-                <PhotoGallery photos={photos} />
-              ) : (
-                <Text style={styles.noPhotosText}>
-                  {isAlertOwner() 
-                    ? "No has agregado fotos aún. Agrega algunas para ayudar a identificar a tu mascota." 
-                    : "No hay fotos disponibles para esta alerta."
-                  }
-                </Text>
-              )}
-              
-              {/* Photo management for alert owners */}
-              {isAlertOwner() && (
-                <View style={styles.photoManagementContainer}>
-                  <Text style={styles.photoManagementTitle}>
-                    {photos.length > 0 ? "Agregar más fotos" : "Agregar fotos"}
-                  </Text>
-                  <PhotoPicker
-                    alertId={alertId}
-                    onPhotosSelected={handlePhotoUpload}
-                    maxPhotos={5}
-                    existingPhotos={photos}
-                    uploadImmediately={true}
-                    style={styles.photoPickerContainer}
-                  />
-                  {uploadingPhotos && (
-                    <View style={styles.uploadingContainer}>
-                      <Loading message="Subiendo fotos..." />
-                    </View>
-                  )}
-                </View>
-              )}
-            </>
-          )}
         </View>
 
         {/* Description */}
@@ -397,6 +378,28 @@ Comparte para ayudar! 🐾`;
             </Text>
           </View>
         </View>
+
+        {/* Photo Upload Controls */}
+        {isAlertOwner() && (
+          <View style={styles.photoManagementSection}>
+            <Text style={styles.photoManagementTitle}>
+              {photos.length > 0 ? "Agregar más fotos" : "Agregar fotos"}
+            </Text>
+            <PhotoPicker
+              alertId={alertId}
+              onPhotosSelected={handlePhotoUpload}
+              maxPhotos={5}
+              existingPhotos={photos}
+              uploadImmediately={true}
+              style={styles.photoPickerContainer}
+            />
+            {uploadingPhotos && (
+              <View style={styles.uploadingContainer}>
+                <Loading message="Subiendo fotos..." />
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Reward */}
         {currentAlert.reward && (
@@ -532,11 +535,15 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   typeBadge: {
-    alignSelf: 'flex-start',
+    // Removed alignSelf: 'flex-start' to allow centering or other positioning within PhotoGallery
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    marginBottom: 20,
+    // marginBottom: 20, // Removed to place it on the photo
+    position: 'absolute', // Position it over the photo
+    top: 10, // Adjust as needed
+    left: 10, // Adjust as needed
+    zIndex: 1, // Ensure it's above the photo
   },
   typeBadgeText: {
     color: COLORS.white,
@@ -545,6 +552,13 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 24,
+  },
+  photosSection: {
+    marginBottom: 32,
+    marginHorizontal: -16, // Expandir para que las fotos lleguen al borde
+  },
+  photoGallery: {
+    // Sin padding para que las fotos ocupen todo el ancho
   },
   petName: {
     fontSize: 28,
@@ -662,27 +676,34 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
     paddingVertical: 20,
+    paddingHorizontal: 16,
+  },
+  photoManagementSection: {
+    marginBottom: 24,
+    padding: 16,
+    backgroundColor: 'transparent',
+    borderRadius: 6,
   },
   photoManagementContainer: {
-    marginTop: 16,
-    padding: 16,
-    backgroundColor: COLORS.lightGray + '20',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.lightGray,
+    marginTop: 12,
+    marginHorizontal: 16, // Restaurar márgenes para los controles
+    padding: 8,
+    backgroundColor: 'transparent',
+    borderRadius: 6,
   },
   photoManagementTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: 12,
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+    marginBottom: 6,
+    textAlign: 'center',
   },
   photoPickerContainer: {
-    marginTop: 8,
+    marginTop: 4,
   },
   uploadingContainer: {
-    marginTop: 12,
-    padding: 8,
+    marginTop: 8,
+    padding: 4,
   },
 });
 

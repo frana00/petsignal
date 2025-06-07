@@ -32,6 +32,23 @@ export const getAlerts = async (options = {}) => {
   // Handle paginated response - extract content array
   if (response.data && response.data.content && Array.isArray(response.data.content)) {
     console.log('📋 Extracted alerts from paginated response:', response.data.content.length, 'alerts');
+    
+    // DEBUG: Log photo data in API response
+    console.log('🔍 Photo data in API response:');
+    response.data.content.forEach((alert, index) => {
+      console.log(`API Alert ${index + 1} (ID: ${alert.id}):`);
+      console.log(`  - photoUrl:`, alert.photoUrl || 'not present');
+      console.log(`  - photoUrls:`, alert.photoUrls || 'not present');
+      console.log(`  - photoUrls type:`, typeof alert.photoUrls);
+      console.log(`  - photoUrls isArray:`, Array.isArray(alert.photoUrls));
+      if (alert.photoUrls && Array.isArray(alert.photoUrls)) {
+        console.log(`  - photoUrls length:`, alert.photoUrls.length);
+        alert.photoUrls.forEach((photo, photoIndex) => {
+          console.log(`    Photo ${photoIndex + 1}:`, photo);
+        });
+      }
+    });
+    
     return response.data.content;
   }
   

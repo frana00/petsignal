@@ -28,23 +28,43 @@ const AlertCard = ({ alert, onPress, style }) => {
   };
 
   const getPhotoUrl = () => {
+    // DEBUG: Log the alert data to understand what's coming from API
+    console.log(`📸 AlertCard DEBUG - Alert ${alert.id}:`, {
+      id: alert.id,
+      title: alert.title,
+      hasPhotoUrl: !!alert.photoUrl,
+      photoUrl: alert.photoUrl,
+      hasPhotoUrls: !!alert.photoUrls,
+      photoUrlsLength: alert.photoUrls ? alert.photoUrls.length : 0,
+      photoUrls: alert.photoUrls,
+      allKeys: Object.keys(alert)
+    });
+    
     // First check if there's a single photoUrl (legacy support)
     if (alert.photoUrl) {
+      console.log(`📸 Using legacy photoUrl for alert ${alert.id}:`, alert.photoUrl);
       return alert.photoUrl;
     }
     
     // Then check if there are multiple photos and take the first one
     if (alert.photoUrls && alert.photoUrls.length > 0) {
       const firstPhoto = alert.photoUrls[0];
+      console.log(`📸 First photo data for alert ${alert.id}:`, firstPhoto);
+      
       // Handle both presigned URL format and direct URL
-      return firstPhoto.presignedUrl || firstPhoto.url || firstPhoto;
+      const url = firstPhoto.presignedUrl || firstPhoto.url || firstPhoto;
+      console.log(`📸 Final URL for alert ${alert.id}:`, url);
+      return url;
     }
     
+    console.log(`📸 No photo data found for alert ${alert.id} - will show placeholder`);
     return null;
   };
 
-  const handleImageError = () => {
+  const handleImageError = (error) => {
     console.warn('Failed to load image for alert:', alert.id);
+    console.warn('Image error details:', error?.nativeEvent);
+    console.warn('Attempted URL:', getPhotoUrl());
     setImageError(true);
   };
 
@@ -104,6 +124,8 @@ const AlertCard = ({ alert, onPress, style }) => {
             style={styles.image}
             resizeMode="cover"
             onError={handleImageError}
+            onLoad={() => console.log(`✅ Image loaded successfully for alert ${alert.id}`)}
+            onLoadStart={() => console.log(`🔄 Started loading image for alert ${alert.id}:`, getPhotoUrl())}
           />
         ) : (
           <View style={[styles.imagePlaceholder, { backgroundColor: getTypeColor() + '20' }]}>

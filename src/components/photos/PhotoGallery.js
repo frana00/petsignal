@@ -72,30 +72,32 @@ const PhotoGallery = ({
   return (
     <View style={[styles.container, style]}>
       <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}
       >
         {photos.map((photo, index) => (
-          <TouchableOpacity
-            key={photo.id || index}
-            style={styles.photoContainer}
-            onPress={() => openPhoto(photo)}
-            activeOpacity={0.8}
-          >
-            <Image
-              source={{ uri: photo.url || photo.uri }}
-              style={styles.photo}
-              resizeMode="cover"
-            />
+          <View key={photo.id || index} style={styles.photoItem}>
+            <TouchableOpacity
+              style={styles.photoContainer}
+              onPress={() => openPhoto(photo)}
+              activeOpacity={0.8}
+            >
+              <Image
+                source={{ uri: photo.url || photo.uri }}
+                style={styles.photo}
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
+            
+            {/* Descripción y información después de la foto */}
             {photo.description && (
-              <View style={styles.descriptionOverlay}>
-                <Text style={styles.descriptionText} numberOfLines={2}>
+              <View style={styles.photoInfoContainer}>
+                <Text style={styles.photoDescriptionText}>
                   {photo.description}
                 </Text>
               </View>
             )}
-          </TouchableOpacity>
+          </View>
         ))}
       </ScrollView>
 
@@ -183,32 +185,39 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContainer: {
-    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  photoItem: {
+    marginBottom: 24,
   },
   photoContainer: {
-    width: 120,
-    height: 120,
-    marginRight: 12,
-    borderRadius: 8,
+    width: width - 32, // Todo el ancho menos márgenes
+    height: (width - 32) * 0.75, // Relación de aspecto 4:3
+    alignSelf: 'center',
+    borderRadius: 16,
     overflow: 'hidden',
-    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 8,
   },
   photo: {
     width: '100%',
     height: '100%',
   },
-  descriptionOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    padding: 6,
+  photoInfoContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
   },
-  descriptionText: {
-    color: COLORS.white,
-    fontSize: 10,
-    fontWeight: '500',
+  photoDescriptionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+    lineHeight: 22,
   },
   emptyContainer: {
     flex: 1,
