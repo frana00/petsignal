@@ -89,7 +89,51 @@ const AlertForm = ({
         return fields;
       };
 
+      // Extract clean description (remove auto-generated metadata)
+      const getCleanDescription = (description) => {
+        if (!description) return '';
+        
+        // Split description into lines
+        const lines = description.split('\n');
+        const cleanLines = [];
+        let foundMetadataSection = false;
+        
+        // Process each line
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          
+          // Check if we've hit the metadata section (empty line followed by metadata)
+          if (
+            trimmedLine.startsWith('Nombre:') ||
+            trimmedLine.startsWith('Color:') ||
+            trimmedLine.startsWith('Edad:') ||
+            trimmedLine.startsWith('Tamaño:') ||
+            trimmedLine.startsWith('Ubicación específica:') ||
+            trimmedLine.startsWith('Contacto:') ||
+            trimmedLine.startsWith('Email:') ||
+            trimmedLine.startsWith('Recompensa:') ||
+            trimmedLine.startsWith('Código Postal proporcionado:')
+          ) {
+            foundMetadataSection = true;
+            continue; // Skip this line and all subsequent lines
+          }
+          
+          // If we haven't found metadata section yet, keep the line
+          if (!foundMetadataSection) {
+            cleanLines.push(line);
+          }
+        }
+        
+        // Remove trailing empty lines
+        while (cleanLines.length > 0 && cleanLines[cleanLines.length - 1].trim() === '') {
+          cleanLines.pop();
+        }
+        
+        return cleanLines.join('\n').trim();
+      };
+
       const parsedFields = parseDescriptionFields(initialData.description);
+      const cleanDescription = getCleanDescription(initialData.description);
       
       // Use default form structure instead of current formData to avoid loops
       const defaultFormData = {
@@ -115,6 +159,7 @@ const AlertForm = ({
       setFormData({
         ...defaultFormData,
         ...initialData,
+        description: cleanDescription, // Use clean description instead of original
         ...parsedFields, // Override with parsed fields from description
         date: initialData.date ? new Date(initialData.date) : new Date(),
         // Ensure email is populated
