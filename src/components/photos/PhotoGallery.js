@@ -23,6 +23,7 @@ const PhotoGallery = ({
 }) => {
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0); // Added state for active index
 
   const openPhoto = (photo) => {
     setSelectedPhoto(photo);
@@ -60,6 +61,13 @@ const PhotoGallery = ({
     onEditPhoto?.(photo);
   };
 
+  // Added function to handle scroll and update active index
+  const handleScroll = (event) => {
+    const scrollPosition = event.nativeEvent.contentOffset.x;
+    const index = Math.round(scrollPosition / (width - 32)); // width - 32 is the photoItem width
+    setActiveIndex(index);
+  };
+
   if (!photos || photos.length === 0) {
     return (
       <View style={[styles.emptyContainer, style]}>
@@ -71,9 +79,13 @@ const PhotoGallery = ({
 
   return (
     <View style={[styles.container, style]}>
-      <ScrollView 
-        showsVerticalScrollIndicator={false}
+      <ScrollView
+        horizontal // Changed to horizontal
+        showsHorizontalScrollIndicator={false} // Hide horizontal scroll indicator
         contentContainerStyle={styles.scrollContainer}
+        pagingEnabled // Enable paging for carousel effect
+        onMomentumScrollEnd={handleScroll} // Added scroll handler
+        scrollEventThrottle={16} // Improve scroll event frequency
       >
         {photos.map((photo, index) => (
           <View key={photo.id || index} style={styles.photoItem}>
@@ -100,6 +112,21 @@ const PhotoGallery = ({
           </View>
         ))}
       </ScrollView>
+
+      {/* Pagination Dots */}
+      {photos.length > 1 && (
+        <View style={styles.paginationContainer}>
+          {photos.map((_, i) => (
+            <View
+              key={i}
+              style={[
+                styles.paginationDot,
+                i === activeIndex ? styles.paginationDotActive : styles.paginationDotInactive,
+              ]}
+            />
+          ))}
+        </View>
+      )}
 
       {/* Full screen photo modal */}
       <Modal
@@ -182,18 +209,22 @@ const PhotoGallery = ({
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    // flex: 1, // Removed to allow fixed height
+    height: (width - 32) * 0.75 + 32, // Fixed height based on photo aspect ratio and padding
   },
   scrollContainer: {
-    paddingVertical: 16,
+    // paddingVertical: 16, // Adjusted for horizontal scroll
+    alignItems: 'center', // Center items for better carousel feel
   },
   photoItem: {
-    marginBottom: 24,
+    // marginBottom: 24, // Removed for horizontal layout
+    width: width - 32, // Each item takes full width for carousel effect
+    marginHorizontal: 16, // Add horizontal margin for spacing between items
+    alignItems: 'center', // Center content within the item
   },
   photoContainer: {
-    width: width - 32, // Todo el ancho menos márgenes
-    height: (width - 32) * 0.75, // Relación de aspecto 4:3
-    alignSelf: 'center',
+    width: '100%', // Take full width of photoItem
+    height: '100%',
     borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -308,6 +339,26 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 20,
     fontWeight: 'bold',
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute',
+    bottom: 10, // Adjust as needed
+    width: '100%',
+  },
+  paginationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 4,
+  },
+  paginationDotActive: {
+    backgroundColor: COLORS.primary,
+  },
+  paginationDotInactive: {
+    backgroundColor: COLORS.lightGray,
   },
 });
 

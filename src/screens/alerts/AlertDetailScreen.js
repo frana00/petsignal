@@ -339,12 +339,18 @@ Comparte para ayudar! 🐾`;
           )}
         </View>
 
-        {/* Pet Name */}
+        {/* Alert Title and Pet Name */}
         <View style={styles.section}>
-          <Text style={styles.petName}>
-            {currentAlert.title || 'Sin nombre'}
+          <Text style={styles.alertTitle}>
+            {currentAlert.title}
           </Text>
+          {currentAlert.petName && currentAlert.petName !== currentAlert.title && (
+            <Text style={styles.petNameDetailScreen}>
+              Nombre de la mascota: {currentAlert.petName}
+            </Text>
+          )}
         </View>
+
         {/* Pet Details */}
         <View style={styles.section}>
           <View style={styles.petDetails}>
@@ -500,71 +506,97 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: COLORS.white,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.lightGray,
   },
   backButton: {
-    paddingVertical: 8,
+    padding: 5,
   },
   backButtonText: {
     fontSize: 16,
     color: COLORS.primary,
-    fontWeight: '600',
   },
   headerActions: {
     flexDirection: 'row',
-    gap: 12,
   },
   shareButton: {
-    padding: 8,
+    padding: 5,
+    marginLeft: 10,
   },
   shareButtonText: {
-    fontSize: 20,
+    fontSize: 20, // Larger icon for share
+    color: COLORS.primary,
   },
   editButton: {
-    padding: 8,
+    padding: 5,
+    marginLeft: 10,
   },
   editButtonText: {
-    fontSize: 20,
+    fontSize: 20, // Larger icon for edit
+    color: COLORS.primary,
   },
   content: {
     flex: 1,
-    padding: 16,
+    paddingHorizontal: 20,
+  },
+  photosSection: {
+    marginBottom: 5, // Reduced margin
+    alignItems: 'center', // Center content like PhotoGallery or noPhotosText
+    position: 'relative', // Needed for absolute positioning of the badge
+  },
+  photoGallery: {
+    // Styles for the photo gallery itself, if needed
+    // e.g., height, width, etc.
+  },
+  noPhotosText: {
+    textAlign: 'center',
+    color: COLORS.gray,
+    paddingVertical: 20,
+    fontStyle: 'italic',
   },
   typeBadge: {
-    // Removed alignSelf: 'flex-start' to allow centering or other positioning within PhotoGallery
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    // marginBottom: 20, // Removed to place it on the photo
-    position: 'absolute', // Position it over the photo
-    top: 10, // Adjust as needed
-    left: 10, // Adjust as needed
-    zIndex: 1, // Ensure it's above the photo
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    zIndex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+    elevation: 3, // For Android shadow
+    shadowColor: '#000', // For iOS shadow
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   typeBadgeText: {
     color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    fontSize: 12,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 15, // Consistent spacing for sections
   },
-  photosSection: {
-    marginBottom: 32,
-    marginHorizontal: -16, // Expandir para que las fotos lleguen al borde
+  alertTitle: { // New style for the main alert title
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginBottom: 4, // Space between title and pet name if shown
+    textAlign: 'center',
   },
-  photoGallery: {
-    // Sin padding para que las fotos ocupen todo el ancho
+  petNameDetailScreen: { // New style for pet name on detail screen
+    fontSize: 18,
+    color: COLORS.darkGray,
+    textAlign: 'center',
+    marginBottom: 8,
   },
-  petName: {
-    fontSize: 28,
+  petName: { // Existing style, now primarily for pet name if different from title or as fallback
+    fontSize: 26, // Keep original styling for now, can be adjusted
     fontWeight: 'bold',
     color: COLORS.text,
     marginBottom: 8,
+    textAlign: 'center',
   },
   petDetails: {
     marginBottom: 8,

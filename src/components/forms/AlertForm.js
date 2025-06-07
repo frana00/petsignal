@@ -156,26 +156,27 @@ const AlertForm = ({
         chipNumber: '',
       };
       
-      setFormData({
-        ...defaultFormData,
-        ...initialData,
-        description: cleanDescription, // Use clean description instead of original
-        ...parsedFields, // Override with parsed fields from description
-        date: initialData.date ? new Date(initialData.date) : new Date(),
-        // Ensure email is populated
-        contactEmail: parsedFields.contactEmail || initialData.contactEmail || user?.email || '',
-      });
+      const newFormDataState = {
+        ...defaultFormData, 
+        ...initialData,     
+        ...parsedFields,    
+      };
+
+      newFormDataState.title = initialData.title || defaultFormData.title;
+      // Ensure petName from initialData (if it exists directly) takes precedence
+      newFormDataState.petName = initialData.petName || parsedFields.petName || defaultFormData.petName;
+      newFormDataState.description = cleanDescription;
+      newFormDataState.date = initialData.date ? new Date(initialData.date) : new Date();
+      newFormDataState.contactEmail = parsedFields.contactEmail || initialData.contactEmail || user?.email || defaultFormData.contactEmail;
+
+      setFormData(newFormDataState);
       
       console.log('🔄 LOADING INITIAL DATA FOR EDIT:', {
         initialDataExists: !!initialData,
+        rawInitialData: initialData,
         parsedFields,
-        finalFormData: {
-          ...defaultFormData,
-          ...initialData,
-          ...parsedFields,
-          date: initialData.date ? new Date(initialData.date) : new Date(),
-          contactEmail: parsedFields.contactEmail || initialData.contactEmail || user?.email || '',
-        }
+        cleanDescription,
+        finalFormDataApplied: newFormDataState 
       });
     }
   }, [initialData, user?.email]);
@@ -332,7 +333,7 @@ const AlertForm = ({
       // Agregar información adicional a la descripción para campos no soportados por el backend
       const additionalInfo = [];
       
-      // Nota: petName ahora se usa como title para alertas LOST, no va en descripción
+      // Updated Note: petName is now a separate field. It should not be manually added to description.
       
       if (formData.color && formData.color.trim()) {
         additionalInfo.push(`Color: ${formData.color}`);
@@ -369,11 +370,10 @@ const AlertForm = ({
 
       const submitData = {
         // Campos requeridos por el backend
-        title: formData.type === ALERT_TYPES.LOST && formData.petName 
-          ? formData.petName 
-          : formData.title,
+        title: formData.title, // Use formData.title as the alert's title
+        petName: formData.petName || undefined, // Send petName if available
         type: formData.type, // LOST o SEEN
-        description: extendedDescription,
+        description: extendedDescription, // Send the potentially augmented description
         breed: formData.breed || '',
         sex: formData.sex,
         countryCode: formData.countryCode,
