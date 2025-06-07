@@ -49,28 +49,18 @@ src/utils/network.config.js
 *.log
 logs/
 
-# Debug and testing files
-debug_profile.js
+# Documentation and testing files
+docs/
+tests/
+App.test.js
+
+# Development utils in src/utils
 src/utils/testHelpers.js
 src/utils/e2eTest.js
 src/utils/integrationTest.js
-TestRunner.js
-App.test.js
-*test.js
-*Test.js
-*.test.*
-*.spec.*
-
-# Specific test files
-test_field_mapping.js
-test_postal_code.js
-test_user_field.js
-test_username_flow.js
 
 # Backend documentation and sensitive data
 backend.txt
-*.md
-!README.md
 
 # Runtime data
 pids/

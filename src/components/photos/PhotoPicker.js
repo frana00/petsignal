@@ -46,12 +46,15 @@ const PhotoPicker = ({
           filename: `photo_${Date.now()}.jpg`,
         };
         
-        setSelectedImages(prev => [...prev, newImage]);
-        setDescriptions(prev => [...prev, '']);
-        
-        // Notify parent component about photo selection
+        // Calculate new arrays immediately
         const updatedImages = [...selectedImages, newImage];
         const updatedDescriptions = [...descriptions, ''];
+        
+        // Update state
+        setSelectedImages(updatedImages);
+        setDescriptions(updatedDescriptions);
+        
+        // Notify parent component about photo selection with correct values
         onPhotosSelected?.({
           images: updatedImages,
           descriptions: updatedDescriptions,
@@ -69,7 +72,7 @@ const PhotoPicker = ({
     setSelectedImages(newImages);
     setDescriptions(newDescriptions);
     
-    // Notify parent component
+    // Notify parent component with updated arrays
     onPhotosSelected?.({
       images: newImages,
       descriptions: newDescriptions,
@@ -81,7 +84,7 @@ const PhotoPicker = ({
     newDescriptions[index] = description;
     setDescriptions(newDescriptions);
     
-    // Notify parent component
+    // Notify parent component with updated description
     onPhotosSelected?.({
       images: selectedImages,
       descriptions: newDescriptions,

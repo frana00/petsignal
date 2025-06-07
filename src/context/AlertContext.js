@@ -229,9 +229,11 @@ export const AlertProvider = ({ children }) => {
       setLoading(true);
       const alert = await getAlertById(alertId);
       dispatch({ type: ACTIONS.SET_CURRENT_ALERT, payload: alert });
+      setLoading(false);
       return alert;
     } catch (error) {
       setError(error.message || 'Error al cargar alerta');
+      setLoading(false);
       throw error;
     }
   };
