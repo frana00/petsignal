@@ -112,6 +112,32 @@ Una aplicación móvil para gestionar alertas de mascotas perdidas y encontradas
 - Lazy loading de componentes nativos
 - Fallbacks para funcionalidades específicas de plataforma
 
+### 🔧 Arreglos y mejoras implementadas
+
+**Estado de botones y formularios:**
+- ✅ Arreglo del estado de carga del botón (no se queda atascado)
+- ✅ Validación de formularios en tiempo real
+- ✅ Botón de edición funcional en modo edición
+- ✅ Manejo correcto de errores y estados de carga
+
+**Vista previa de fotos:**
+- ✅ Previsualización inmediata de fotos seleccionadas
+- ✅ Sincronización perfecta entre componentes
+- ✅ Eliminación y descripción de fotos
+
+**Seguridad y autorización:**
+- ✅ Control de permisos por usuario (solo editar alertas propias)
+- ✅ Validación de autorización en UI y lógica
+- ✅ Mensajes de error apropiados para accesos no autorizados
+
+**Formulario de alertas optimizado:**
+- ✅ Campos opcionales para mascotas vistas vs perdidas
+- ✅ Código postal opcional (evita errores de validación)
+- ✅ Mapeo correcto de tipos de alerta (SEEN/LOST)
+- ✅ Limpieza de datos antes del envío
+
+> 📚 **Documentación detallada**: Todos los arreglos están documentados en la carpeta `/docs/` con explicaciones técnicas, código de ejemplo y guías de testing.
+
 ### Estructura del proyecto
 
 ```
@@ -130,6 +156,18 @@ src/
 │   └── profile/        # Perfil de usuario
 ├── services/           # Servicios API (alerts, photos, etc.)
 └── utils/              # Utilidades y configuración
+
+docs/                   # 📚 Documentación técnica del proyecto
+├── README.md           # Índice de toda la documentación
+├── *_COMPLETE.md       # Documentos de arreglos implementados
+├── *_GUIDE.md          # Guías de desarrollo y testing
+└── PHASE_*.md          # Documentación por fases de desarrollo
+
+tests/                  # 🧪 Tests de desarrollo (en .gitignore)
+├── README.md           # Guía de tests de debugging
+├── test_*.js           # Tests específicos de funcionalidades
+├── TestRunner.js       # Ejecutor de tests de desarrollo
+└── test_template.js    # Template para nuevos tests
 ```
 
 ### Configuración de API
@@ -146,6 +184,27 @@ La aplicación incluye herramientas de debug en la pantalla de login:
 - **Info**: Información de red y conectividad
 - **Test**: Prueba de conexión a la API
 - **Datos**: Visualización de datos almacenados localmente
+
+### 📚 Documentación técnica
+
+El proyecto incluye documentación completa en `/docs/`:
+
+- **Arreglos implementados**: Documentación detallada de cada fix realizado
+- **Guías de desarrollo**: Procesos de desarrollo por fases
+- **Testing**: Guías de pruebas y validación
+- **Seguridad**: Implementaciones de autorización y seguridad
+
+### 🧪 Testing y debugging
+
+**Tests de desarrollo** (en `/tests/`, excluidos del repositorio):
+- Tests específicos para cada arreglo implementado
+- Scripts de debugging y validación
+- Template para crear nuevos tests
+- TestRunner para ejecutar múltiples tests
+
+**Tests oficiales**:
+- `App.test.js` - Tests unitarios del proyecto
+- Futura integración con Jest/React Native Testing Library
 
 ## 📋 API
 
@@ -201,8 +260,12 @@ La aplicación requiere los siguientes permisos:
 - Las credenciales se almacenan de forma segura usando Expo SecureStore
 - Las IPs de desarrollo están en archivos gitignored
 - No se exponen datos sensibles en el código fuente
-- Los archivos de documentación interna están excluidos del repositorio
-- Configuración de red local protegida (.gitignore actualizado)
+- **Control de autorización**: Los usuarios solo pueden editar/eliminar sus propias alertas
+- **Validación multicapa**: Verificación en UI y lógica de negocio
+- **Documentación y tests protegidos**: Archivos sensibles excluidos del repositorio
+- **Configuración de red local protegida**: `.gitignore` optimizado para desarrollo seguro
+
+> 🛡️ **Implementación de seguridad completa**: Ver `/docs/SECURITY_IMPLEMENTATION_COMPLETE.md` para detalles técnicos.
 
 ## 🤝 Contribuir
 
