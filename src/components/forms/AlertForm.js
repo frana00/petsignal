@@ -287,9 +287,7 @@ const AlertForm = ({
       // Agregar información adicional a la descripción para campos no soportados por el backend
       const additionalInfo = [];
       
-      if (formData.petName && formData.petName.trim()) {
-        additionalInfo.push(`Nombre: ${formData.petName}`);
-      }
+      // Nota: petName ahora se usa como title para alertas LOST, no va en descripción
       
       if (formData.color && formData.color.trim()) {
         additionalInfo.push(`Color: ${formData.color}`);
@@ -326,7 +324,9 @@ const AlertForm = ({
 
       const submitData = {
         // Campos requeridos por el backend
-        title: formData.title,
+        title: formData.type === ALERT_TYPES.LOST && formData.petName 
+          ? formData.petName 
+          : formData.title,
         type: formData.type, // LOST o SEEN
         description: extendedDescription,
         breed: formData.breed || '',

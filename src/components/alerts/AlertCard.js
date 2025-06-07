@@ -75,6 +75,21 @@ const AlertCard = ({ alert, onPress, style }) => {
     return location;
   };
 
+  const getDisplayTitle = () => {
+    // Para alertas de tipo PERDIDO, usar el título (que ahora contiene el petName)
+    if (alert.type === ALERT_TYPES.LOST) {
+      return alert.title || 'Sin nombre';
+    }
+    
+    // Para alertas de tipo ENCONTRADO, mostrar el título o "Sin nombre"
+    if (alert.type === ALERT_TYPES.SEEN) {
+      return alert.title || 'Sin nombre';
+    }
+    
+    // Fallback para otros tipos
+    return alert.title || 'Sin nombre';
+  };
+
   return (
     <TouchableOpacity
       style={[styles.container, style]}
@@ -107,7 +122,7 @@ const AlertCard = ({ alert, onPress, style }) => {
       {/* Content */}
       <View style={styles.content}>
         <Text style={styles.title} numberOfLines={2}>
-          {alert.petName || 'Sin nombre'}
+          {getDisplayTitle()}
         </Text>
         
         <Text style={styles.breed} numberOfLines={1}>

@@ -69,7 +69,7 @@ const AlertDetailScreen = ({ route, navigation }) => {
   };
 
   const handleEmail = (email) => {
-    const url = `mailto:${email}?subject=Consulta sobre ${currentAlert.petName}`;
+    const url = `mailto:${email}?subject=Consulta sobre ${currentAlert.title}`;
     Linking.canOpenURL(url)
       .then((supported) => {
         if (supported) {
@@ -85,7 +85,7 @@ const AlertDetailScreen = ({ route, navigation }) => {
     try {
       const message = `${currentAlert.type === ALERT_TYPES.LOST ? '🔍 MASCOTA PERDIDA' : '👀 MASCOTA ENCONTRADA'}
 
-${currentAlert.petName || 'Sin nombre'}
+${currentAlert.title || 'Sin nombre'}
 ${currentAlert.breed} - ${currentAlert.color}
 Ubicación: ${currentAlert.location}
 Fecha: ${new Date(currentAlert.date).toLocaleDateString('es-ES')}
@@ -100,7 +100,7 @@ Comparte para ayudar! 🐾`;
 
       await Share.share({
         message,
-        title: `${currentAlert.type === ALERT_TYPES.LOST ? 'Mascota Perdida' : 'Mascota Encontrada'} - ${currentAlert.petName}`,
+        title: `${currentAlert.type === ALERT_TYPES.LOST ? 'Mascota Perdida' : 'Mascota Encontrada'} - ${currentAlert.title}`,
       });
     } catch (error) {
       console.error('Error sharing:', error);
@@ -319,7 +319,7 @@ Comparte para ayudar! 🐾`;
         {/* Pet Information */}
         <View style={styles.section}>
           <Text style={styles.petName}>
-            {currentAlert.petName || 'Sin nombre'}
+            {currentAlert.title || 'Sin nombre'}
           </Text>
           
           <View style={styles.petDetails}>
