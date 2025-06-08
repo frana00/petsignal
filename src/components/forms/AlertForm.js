@@ -176,7 +176,13 @@ const AlertForm = ({
         rawInitialData: initialData,
         parsedFields,
         cleanDescription,
-        finalFormDataApplied: newFormDataState 
+        finalFormDataApplied: newFormDataState,
+        petNameDebug: {
+          'initialData.petName': initialData.petName,
+          'parsedFields.petName': parsedFields.petName,
+          'defaultFormData.petName': defaultFormData.petName,
+          'final petName': newFormDataState.petName
+        }
       });
     }
   }, [initialData, user?.email]);
@@ -371,7 +377,6 @@ const AlertForm = ({
       const submitData = {
         // Campos requeridos por el backend
         title: formData.title, // Use formData.title as the alert's title
-        petName: formData.petName || undefined, // Send petName if available
         type: formData.type, // LOST o SEEN
         description: extendedDescription, // Send the potentially augmented description
         breed: formData.breed || '',
@@ -379,6 +384,11 @@ const AlertForm = ({
         countryCode: formData.countryCode,
         date: formData.date.toISOString(),
         status: 'ACTIVE', // Default status
+        
+        // Add petName only if it exists and is not empty
+        ...(formData.petName && formData.petName.trim() && {
+          petName: formData.petName.trim()
+        }),
         
         // Campos opcionales del backend
         chipNumber: formData.chipNumber || undefined,
@@ -392,13 +402,23 @@ const AlertForm = ({
         // Usar postal code válido del backend - según documentación del backend, "04001" es un código válido
         // Si el usuario proporcionó un código postal, lo agregamos a la descripción
         postalCode: "04001", // Código postal de ejemplo válido según backend.txt
-      };
-
-      // Agregar código postal del usuario a la descripción si se proporcionó uno diferente
+      };      // Agregar código postal del usuario a la descripción si se proporcionó uno diferente
       if (formData.postalCode && formData.postalCode.trim() && formData.postalCode.trim() !== "04001") {
         submitData.description += `\nCódigo Postal proporcionado: ${formData.postalCode.trim()}`;
       }
-      
+
+      console.log('📤 SUBMIT DATA DEBUG:', {
+        formDataPetName: formData.petName,
+        formDataPetNameTrimmed: formData.petName ? formData.petName.trim() : null,
+        formDataPetNameExists: !!(formData.petName && formData.petName.trim()),
+        submitDataPetName: submitData.petName,
+        titleInFormData: formData.title,
+        titleInSubmitData: submitData.title,
+        typeInSubmitData: submitData.type,
+        fullSubmitDataKeys: Object.keys(submitData),
+        fullSubmitData: submitData
+      });
+
       onSubmit?.(submitData);
     }
   };

@@ -243,12 +243,25 @@ export const AlertProvider = ({ children }) => {
     try {
       setLoading(true);
       const newAlert = await createAlert(alertData);
+      
+      console.log('🚀 New alert created:', newAlert);
+      console.log('🚀 Alert petName:', newAlert.petName);
+      console.log('🚀 Alert photoUrls:', newAlert.photoUrls);
+      
       dispatch({ type: ACTIONS.ADD_ALERT, payload: newAlert });
-      setLoading(false); // Add this line
+      
+      // After creating an alert, refresh the list to ensure we have the latest data
+      // This helps ensure photos are properly loaded
+      setTimeout(() => {
+        console.log('🔄 Refreshing alerts after creation...');
+        loadAlerts(true); // Force refresh
+      }, 1000);
+      
+      setLoading(false);
       return newAlert;
     } catch (error) {
       setError(error.message || 'Error al crear alerta');
-      setLoading(false); // Add this line
+      setLoading(false);
       throw error;
     }
   };

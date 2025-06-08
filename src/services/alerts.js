@@ -97,7 +97,20 @@ export const createAlert = async (alertData) => {
     throw new Error('Username is required but missing from alert data');
   }
   
+  console.log('🚀 CREATE ALERT DEBUG:', {
+    originalAlertData: alertData,
+    cleanData: cleanData,
+    petNameInOriginal: alertData.petName,
+    petNameInClean: cleanData.petName,
+    hasPetNameInClean: !!cleanData.petName,
+    titleInClean: cleanData.title
+  });
+  
   const response = await apiClient.post('/alerts', cleanData);
+  
+  console.log('📥 CREATE ALERT RESPONSE:', response.data);
+  console.log('📥 Response petName:', response.data.petName);
+  console.log('📥 Response photoUrls:', response.data.photoUrls);
   
   return response.data;
 };
@@ -115,7 +128,19 @@ export const updateAlert = async (alertId, alertData) => {
   );
   
   console.log('📤 Updating alert with data:', cleanData);
+  
+  console.log('🔍 UPDATE ALERT DEBUG:', {
+    originalAlertData: alertData,
+    cleanData: cleanData,
+    petNameInOriginal: alertData.petName,
+    petNameInClean: cleanData.petName,
+    hasPetNameInClean: !!cleanData.petName
+  });
+  
   const response = await apiClient.put(`/alerts/${alertId}`, cleanData);
+  
+  console.log('📥 UPDATE ALERT RESPONSE:', response.data);
+  
   return response.data;
 };
 

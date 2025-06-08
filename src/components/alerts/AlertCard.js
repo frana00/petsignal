@@ -29,7 +29,7 @@ const AlertCard = ({ alert, onPress, style }) => {
 
   const getPhotoUrl = () => {
     // DEBUG: Log the alert data to understand what's coming from API
-    console.log(`📸 AlertCard DEBUG - Alert ${alert.id}:`, {
+    console.log(`📸 AlertCard getPhotoUrl - Alert ${alert.id}:`, {
       id: alert.id,
       title: alert.title,
       hasPhotoUrl: !!alert.photoUrl,
@@ -37,7 +37,8 @@ const AlertCard = ({ alert, onPress, style }) => {
       hasPhotoUrls: !!alert.photoUrls,
       photoUrlsLength: alert.photoUrls ? alert.photoUrls.length : 0,
       photoUrls: alert.photoUrls,
-      allKeys: Object.keys(alert)
+      status: alert.status,
+      createdRecently: alert.createdAt ? (Date.now() - new Date(alert.createdAt).getTime()) < 60000 : false
     });
     
     // First check if there's a single photoUrl (legacy support)
@@ -53,11 +54,19 @@ const AlertCard = ({ alert, onPress, style }) => {
       
       // Handle both presigned URL format and direct URL
       const url = firstPhoto.presignedUrl || firstPhoto.url || firstPhoto;
-      console.log(`📸 Final URL for alert ${alert.id}:`, url);
-      return url;
+      console.log(`📸 Extracted URL for alert ${alert.id}:`, url);
+      
+      // Additional check for URL validity
+      if (url && typeof url === 'string' && url.length > 0) {
+        console.log(`📸 ✅ Valid URL found for alert ${alert.id}`);
+        return url;
+      } else {
+        console.log(`📸 ❌ Invalid URL for alert ${alert.id}:`, typeof url, url);
+        return null;
+      }
     }
     
-    console.log(`📸 No photo data found for alert ${alert.id} - will show placeholder`);
+    console.log(`📸 ❌ No photo data found for alert ${alert.id} - will show placeholder`);
     return null;
   };
 
@@ -96,14 +105,28 @@ const AlertCard = ({ alert, onPress, style }) => {
   };
 
   const getDisplayTitle = () => {
-    // Para alertas de tipo PERDIDO, usar el título (que ahora contiene el petName)
+    // DEBUG: Log alert data to see what we have
+    console.log(`🏷️ AlertCard getDisplayTitle for alert ${alert.id}:`, {
+      type: alert.type,
+      title: alert.title,
+      petName: alert.petName,
+      hasPetName: !!alert.petName,
+      willShowPetName: alert.type === ALERT_TYPES.LOST && !!alert.petName,
+      allKeys: Object.keys(alert)
+    });
+    
+    // Para alertas de tipo PERDIDO, mostrar el nombre de la mascota
     if (alert.type === ALERT_TYPES.LOST) {
-      return alert.title || 'Sin nombre';
+      const displayName = alert.petName || alert.title || 'Sin nombre';
+      console.log(`🐕 LOST alert ${alert.id} displaying:`, displayName, `(petName: "${alert.petName}", title: "${alert.title}")`);
+      return displayName;
     }
     
-    // Para alertas de tipo ENCONTRADO, mostrar el título o "Sin nombre"
+    // Para alertas de tipo ENCONTRADO, mostrar el título de la alerta
     if (alert.type === ALERT_TYPES.SEEN) {
-      return alert.title || 'Sin nombre';
+      const displayName = alert.title || 'Sin nombre';
+      console.log(`👀 SEEN alert ${alert.id} displaying:`, displayName);
+      return displayName;
     }
     
     // Fallback para otros tipos

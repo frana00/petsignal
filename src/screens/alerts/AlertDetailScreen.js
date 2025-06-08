@@ -122,6 +122,13 @@ Comparte para ayudar! 🐾`;
       alertId: currentAlert.id,
       alertData: currentAlert 
     });
+    
+    console.log('🚀 NAVIGATING TO EDIT WITH DATA:', {
+      alertId: currentAlert.id,
+      alertData: currentAlert,
+      petNameInAlertData: currentAlert.petName,
+      titleInAlertData: currentAlert.title
+    });
   };
 
   const handlePhotoUpload = async (selectedPhotos) => {

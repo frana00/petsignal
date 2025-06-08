@@ -55,6 +55,16 @@ const HomeScreen = ({ navigation }) => {
     refreshAlerts();
   }, []);
 
+  // Add focus listener to refresh alerts when returning to screen
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      console.log('🏠 HomeScreen: Screen focused, refreshing alerts');
+      refreshAlerts();
+    });
+
+    return unsubscribe;
+  }, [navigation, refreshAlerts]);
+
   // Debug logging for alerts data
   useEffect(() => {
     console.log('🏠 HomeScreen: Alerts data changed');

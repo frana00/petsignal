@@ -32,6 +32,11 @@ const CreateEditAlertScreen = ({ route, navigation }) => {
   useEffect(() => {
     if (alertData) {
       setFormData(alertData);
+      console.log('🔄 SETTING FORM DATA IN CREATE/EDIT SCREEN:', {
+        alertData,
+        petNameInAlertData: alertData.petName,
+        titleInAlertData: alertData.title
+      });
     }
   }, [alertData]);
 
