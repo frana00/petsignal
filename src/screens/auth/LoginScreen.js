@@ -129,6 +129,13 @@ const LoginScreen = ({ navigation }) => {
             style={styles.loginButton}
           />
 
+          <TouchableOpacity 
+            style={styles.forgotPasswordContainer}
+            onPress={() => navigation.navigate('ForgotPassword')}
+          >
+            <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
+          </TouchableOpacity>
+
           <View style={styles.registerContainer}>
             <Text style={styles.registerText}>¿No tienes cuenta? </Text>
             <TouchableOpacity onPress={navigateToRegister}>
@@ -238,9 +245,17 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   registerLink: {
-    fontSize: 16,
     color: COLORS.primary,
     fontWeight: '600',
+  },
+  forgotPasswordContainer: {
+    marginVertical: 12,
+    alignItems: 'center',
+  },
+  forgotPasswordText: {
+    color: COLORS.primary,
+    fontSize: 14,
+    fontWeight: '500',
   },
   debugContainer: {
     marginTop: 20,

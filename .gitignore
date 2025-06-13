@@ -52,12 +52,22 @@ logs/
 # Documentation and testing files
 docs/
 tests/
+scripts/
 App.test.js
+
+# Ignore all .md files except README.md in root
+*.md
+!README.md
 
 # Development utils in src/utils
 src/utils/testHelpers.js
 src/utils/e2eTest.js
 src/utils/integrationTest.js
+
+# Development screens and components (not for production)
+src/screens/dev/
+src/components/testing/
+src/hooks/useDeepLinking.js
 
 # Backend documentation and sensitive data
 backend.txt

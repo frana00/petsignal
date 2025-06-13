@@ -15,16 +15,13 @@ export const validateRequired = (value) => {
 /**
  * Validates email format
  * @param {string} email - The email to validate
- * @returns {string|null} - Error message or null if valid
+ * @returns {boolean} - True if valid format
  */
 export const validateEmail = (email) => {
-  const requiredError = validateRequired(email);
-  if (requiredError) return requiredError;
-  
-  if (!VALIDATION_PATTERNS.EMAIL.test(email)) {
-    return ERROR_MESSAGES.INVALID_EMAIL;
+  if (!email || email.trim() === '') {
+    return false;
   }
-  return null;
+  return VALIDATION_PATTERNS.EMAIL.test(email);
 };
 
 /**
@@ -45,16 +42,19 @@ export const validateUsername = (username) => {
 /**
  * Validates password length
  * @param {string} password - The password to validate
- * @returns {string|null} - Error message or null if valid
+ * @returns {Object} - Object with isValid boolean and message
  */
 export const validatePassword = (password) => {
   const requiredError = validateRequired(password);
-  if (requiredError) return requiredError;
-  
-  if (password.length < 6) {
-    return ERROR_MESSAGES.PASSWORD_MIN_LENGTH;
+  if (requiredError) {
+    return { isValid: false, message: requiredError };
   }
-  return null;
+  
+  if (password.length < 8) {
+    return { isValid: false, message: 'La contraseña debe tener al menos 8 caracteres' };
+  }
+  
+  return { isValid: true, message: null };
 };
 
 /**

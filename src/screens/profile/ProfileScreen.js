@@ -340,6 +340,16 @@ const ProfileScreen = ({ navigation }) => {
               />
             )}
 
+            {/* Development button - Only in development mode */}
+            {__DEV__ && (
+              <Button
+                title="🛠️ Desarrollo"
+                onPress={() => navigation.navigate('Dev')}
+                variant="text"
+                style={styles.devButton}
+              />
+            )}
+
             <Button
               title="Cerrar Sesión"
               onPress={handleLogout}
@@ -449,6 +459,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   editButton: {
+    marginBottom: 8,
+  },
+  devButton: {
     marginBottom: 8,
   },
   logoutButton: {

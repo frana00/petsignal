@@ -1,5 +1,6 @@
 import { createUser, validateCredentials } from './users';
 import { saveCredentials, saveUserData, clearCredentials, getCredentials, getUserData, saveUserDataForUser, getUserDataForUser } from '../utils/storage';
+import apiClient from './api';
 
 /**
  * Registers a new user
@@ -135,5 +136,71 @@ export const validateSession = async () => {
     // If validation fails, clear stored data
     await clearAllData();
     return false;
+  }
+};
+
+/**
+ * Requests a password reset email
+ * @param {string} email - The email address
+ * @returns {Promise<Object>} - Response message
+ */
+export const requestPasswordReset = async (email) => {
+  try {
+    console.log(`🔐 Requesting password reset for: ${email}`);
+    
+    const response = await apiClient.post('/auth/forgot-password', 
+      { email }, 
+      { skipAuth: true }
+    );
+
+    console.log('✅ Password reset email sent');
+    return response.data;
+  } catch (error) {
+    console.error('❌ Password reset request failed:', error);
+    throw error;
+  }
+};
+
+/**
+ * Verifies if a reset token is valid
+ * @param {string} token - The reset token
+ * @returns {Promise<Object>} - Token validation result
+ */
+export const verifyResetToken = async (token) => {
+  try {
+    console.log(`🔍 Verifying reset token: ${token.substring(0, 8)}...`);
+    
+    const response = await apiClient.get(`/auth/verify-reset-token/${token}`, {
+      skipAuth: true
+    });
+
+    console.log('✅ Token verified successfully');
+    return response.data;
+  } catch (error) {
+    console.error('❌ Token verification failed:', error);
+    throw error;
+  }
+};
+
+/**
+ * Resets password with token
+ * @param {string} token - The reset token
+ * @param {string} newPassword - The new password
+ * @returns {Promise<Object>} - Reset result
+ */
+export const resetPassword = async (token, newPassword) => {
+  try {
+    console.log(`🔐 Resetting password with token: ${token.substring(0, 8)}...`);
+    
+    const response = await apiClient.post('/auth/reset-password', 
+      { token, newPassword },
+      { skipAuth: true }
+    );
+
+    console.log('✅ Password reset successfully');
+    return response.data;
+  } catch (error) {
+    console.error('❌ Password reset failed:', error);
+    throw error;
   }
 };
