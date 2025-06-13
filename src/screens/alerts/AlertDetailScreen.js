@@ -44,12 +44,18 @@ const AlertDetailScreen = ({ route, navigation }) => {
   };
 
   const loadPhotos = async () => {
+    console.log('🔄 AlertDetailScreen: loadPhotos called for alert:', alertId);
     try {
       setLoadingPhotos(true);
+      console.log('📥 Calling getAlertPhotos...');
       const alertPhotos = await getAlertPhotos(alertId);
+      console.log('📸 Photos loaded:', {
+        count: alertPhotos ? alertPhotos.length : 0,
+        photos: alertPhotos
+      });
       setPhotos(alertPhotos);
     } catch (error) {
-      console.error('Error loading photos:', error);
+      console.error('❌ Error loading photos:', error);
     } finally {
       setLoadingPhotos(false);
     }
@@ -131,37 +137,29 @@ Comparte para ayudar! 🐾`;
     });
   };
 
-  const handlePhotoUpload = async (selectedPhotos) => {
-    if (!selectedPhotos || selectedPhotos.length === 0) {
+  const handlePhotoUpload = async (uploadResults) => {
+    console.log('📞 AlertDetailScreen: handlePhotoUpload called');
+    console.log('Upload results received:', uploadResults);
+    console.log('Upload results type:', typeof uploadResults);
+    console.log('Upload results is array:', Array.isArray(uploadResults));
+    
+    if (!uploadResults || uploadResults.length === 0) {
+      console.log('❌ No upload results received');
       return;
     }
 
     try {
-      setUploadingPhotos(true);
-      
-      // Upload photos using the batch upload function
-      const uploadResults = await uploadMultiplePhotos(selectedPhotos, alertId);
-      
-      const successCount = uploadResults.filter(r => r.uploaded).length;
-      const failureCount = uploadResults.length - successCount;
-      
-      if (failureCount > 0) {
-        Alert.alert(
-          'Fotos subidas parcialmente',
-          `${successCount} de ${selectedPhotos.length} foto(s) se subieron exitosamente.`
-        );
-      } else {
-        Alert.alert('Éxito', `${successCount} foto(s) subidas correctamente.`);
-      }
+      // PhotoPicker with uploadImmediately=true handles the upload internally
+      // This callback is called after successful upload
+      console.log('📸 Photos uploaded successfully:', uploadResults);
       
       // Reload photos to show the new ones
+      console.log('🔄 Reloading photos...');
       await loadPhotos();
+      console.log('✅ Photos reloaded successfully');
       
     } catch (error) {
-      console.error('Error uploading photos:', error);
-      Alert.alert('Error', 'No se pudieron subir las fotos. Inténtalo de nuevo.');
-    } finally {
-      setUploadingPhotos(false);
+      console.error('❌ Error reloading photos after upload:', error);
     }
   };
 
@@ -453,7 +451,7 @@ Comparte para ayudar! 🐾`;
             </Text>
             <PhotoPicker
               alertId={alertId}
-              onPhotosSelected={handlePhotoUpload}
+              onPhotoUploaded={handlePhotoUpload}
               maxPhotos={5}
               existingPhotos={photos}
               uploadImmediately={true}

@@ -697,20 +697,32 @@ const AlertForm = ({
         )}
       </View>
 
-      {/* Photos Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Fotos (opcional)</Text>
-        <Text style={styles.helperText}>
-          Agrega fotos para que sea más fácil identificar a la mascota
-        </Text>
-        
-        <PhotoPicker
-          onPhotosSelected={handlePhotosSelected}
-          maxPhotos={5}
-          uploadImmediately={false} // For new alerts, don't upload immediately
-          style={styles.photoPickerContainer}
-        />
-      </View>
+      {/* Photos Section - Solo disponible al crear alertas nuevas */}
+      {!initialData && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Fotos (opcional)</Text>
+          <Text style={styles.helperText}>
+            Agrega fotos para que sea más fácil identificar a la mascota
+          </Text>
+          
+          <PhotoPicker
+            onPhotosSelected={handlePhotosSelected}
+            maxPhotos={5}
+            uploadImmediately={false} // For new alerts, don't upload immediately
+            style={styles.photoPickerContainer}
+          />
+        </View>
+      )}
+
+      {/* Mensaje informativo para edición */}
+      {initialData && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Fotos</Text>
+          <Text style={styles.helperText}>
+            Para agregar más fotos a esta alerta, ve a la pantalla de detalles de la alerta donde podrás subir fotos adicionales.
+          </Text>
+        </View>
+      )}
 
       {/* Submit Button */}
       <View style={styles.submitContainer}>

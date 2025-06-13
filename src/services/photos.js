@@ -283,20 +283,48 @@ export const requestPresignedUrls = async (photoFilenames, alertId = null) => {
       // For existing alerts: POST /alerts/{id}/photos
       url = `/alerts/${alertId}/photos`;
       payload = { photoFilenames };
+      console.log('📤 EXISTING ALERT: Requesting presigned URLs for alert:', alertId);
     } else {
       // For new alerts, we'll use a generic endpoint
       url = '/photos/presigned-urls';
       payload = { photoFilenames };
+      console.log('📤 NEW ALERT: Requesting presigned URLs');
     }
     
-    console.log('📤 Requesting presigned URLs:', payload);
+    console.log('📤 Request details:', {
+      url: url,
+      payload: payload,
+      alertId: alertId,
+      photoFilenames: photoFilenames
+    });
+    
     const response = await apiClient.post(url, payload);
     
     // Response should be array of {s3ObjectKey, presignedUrl}
-    console.log('📥 Received presigned URLs:', response.data);
+    console.log('📥 Received presigned URLs response:', {
+      status: response.status,
+      statusText: response.statusText,
+      data: response.data,
+      dataType: typeof response.data,
+      isArray: Array.isArray(response.data),
+      length: response.data ? response.data.length : 0
+    });
+    
+    if (!response.data || !Array.isArray(response.data) || response.data.length === 0) {
+      console.error('❌ Invalid presigned URLs response:', response.data);
+      throw new Error('Invalid presigned URLs response from server');
+    }
+    
     return response.data;
   } catch (error) {
-    console.error('Error requesting presigned URLs:', error);
+    console.error('❌ Error requesting presigned URLs:', {
+      message: error.message,
+      response: error.response ? {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data
+      } : 'No response available'
+    });
     throw new Error(error.response?.data?.message || 'Error al solicitar URLs de subida');
   }
 };
@@ -304,18 +332,32 @@ export const requestPresignedUrls = async (photoFilenames, alertId = null) => {
 // Upload photo directly to S3 using presigned URL
 export const uploadToS3 = async (imageUri, presignedUrl, contentType = 'image/jpeg') => {
   try {
-    console.log('📤 Uploading to S3:', presignedUrl);
+    console.log('📤 Starting S3 upload:', {
+      imageUri: imageUri,
+      presignedUrlLength: presignedUrl ? presignedUrl.length : 0,
+      presignedUrlStart: presignedUrl ? presignedUrl.substring(0, 100) + '...' : 'null',
+      contentType: contentType
+    });
     
     // Process image before uploading
+    console.log('🔄 Processing image...');
     const processedImage = await processImage(imageUri);
+    console.log('✅ Image processed:', {
+      originalUri: imageUri,
+      processedUri: processedImage.uri,
+      uriType: typeof processedImage.uri
+    });
     
     let uploadBody;
     
     if (Platform.OS === 'web') {
+      console.log('🌐 Web platform: Converting to blob...');
       // On web, convert data URL to blob
       const response = await fetch(processedImage.uri);
       uploadBody = await response.blob();
+      console.log('✅ Blob created:', { size: uploadBody.size, type: uploadBody.type });
     } else {
+      console.log('📱 Mobile platform: Using FormData format...');
       // On React Native, for S3 presigned URLs we need to send raw binary data
       // Read the image file as binary data
       uploadBody = {
@@ -323,30 +365,47 @@ export const uploadToS3 = async (imageUri, presignedUrl, contentType = 'image/jp
         type: contentType,
         name: 'photo.jpg',
       };
+      console.log('✅ Upload body prepared:', uploadBody);
     }
     
     // Prepare headers
     const headers = {
       'Content-Type': contentType,
     };
+    console.log('📋 Upload headers:', headers);
     
     // Upload directly to S3
+    console.log('🚀 Sending PUT request to S3...');
     const uploadResponse = await fetch(presignedUrl, {
       method: 'PUT',
       headers: headers,
       body: uploadBody,
     });
     
+    console.log('📡 S3 response received:', {
+      status: uploadResponse.status,
+      statusText: uploadResponse.statusText,
+      ok: uploadResponse.ok,
+      headers: Object.fromEntries(uploadResponse.headers.entries())
+    });
+    
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text();
-      console.error('S3 upload failed:', uploadResponse.status, errorText);
+      console.error('❌ S3 upload failed:', {
+        status: uploadResponse.status,
+        statusText: uploadResponse.statusText,
+        errorText: errorText
+      });
       throw new Error(`S3 upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`);
     }
     
     console.log('✅ Successfully uploaded to S3');
     return true;
   } catch (error) {
-    console.error('Error uploading to S3:', error);
+    console.error('❌ Error uploading to S3:', {
+      message: error.message,
+      stack: error.stack
+    });
     throw new Error(`Error al subir foto a S3: ${error.message}`);
   }
 };
@@ -440,32 +499,55 @@ export const deletePhoto = async (photoId) => {
 // Batch upload multiple photos using presigned URLs
 export const uploadMultiplePhotos = async (images, alertId = null) => {
   try {
+    console.log('🚀 BATCH UPLOAD START:', {
+      imageCount: images.length,
+      alertId: alertId,
+      alertIdType: typeof alertId,
+      images: images.map((img, i) => ({
+        index: i,
+        uri: img.uri,
+        description: img.description,
+        filename: img.filename
+      }))
+    });
+    
     // Prepare filenames
     const photoFilenames = images.map((_, index) => `photo_${Date.now()}_${index}.jpg`);
     
-    console.log('📤 Starting batch upload for', images.length, 'photos');
-    console.log('📝 Photo filenames:', photoFilenames);
+    console.log('� Generated photo filenames:', photoFilenames);
     
     // Request presigned URLs for all photos
+    console.log('📤 Requesting presigned URLs...');
     const presignedData = await requestPresignedUrls(photoFilenames, alertId);
+    console.log('📥 Presigned URLs received:', presignedData);
     
     if (!presignedData || presignedData.length !== images.length) {
-      throw new Error('Mismatch between requested and received presigned URLs');
+      const errorMsg = `Mismatch between requested (${images.length}) and received (${presignedData ? presignedData.length : 0}) presigned URLs`;
+      console.error('❌ URL count mismatch:', errorMsg);
+      throw new Error(errorMsg);
     }
     
     // Upload each photo to S3
+    console.log('📤 Starting individual photo uploads...');
     const uploadPromises = images.map(async (image, index) => {
       const { s3ObjectKey, presignedUrl } = presignedData[index];
       
+      console.log(`📸 Uploading photo ${index + 1}/${images.length}:`, {
+        imageUri: image.uri,
+        s3ObjectKey: s3ObjectKey,
+        description: image.description
+      });
+      
       try {
         await uploadToS3(image.uri, presignedUrl);
+        console.log(`✅ Photo ${index + 1} uploaded successfully`);
         return {
           s3ObjectKey,
           description: image.description || `Foto ${index + 1}`,
           uploaded: true,
         };
       } catch (error) {
-        console.error(`Error uploading photo ${index}:`, error);
+        console.error(`❌ Photo ${index + 1} upload failed:`, error.message);
         return {
           s3ObjectKey,
           description: image.description || `Foto ${index + 1}`,
@@ -475,21 +557,32 @@ export const uploadMultiplePhotos = async (images, alertId = null) => {
       }
     });
     
+    console.log('⏳ Waiting for all uploads to complete...');
     const results = await Promise.all(uploadPromises);
     
     // Log results
     const successCount = results.filter(r => r.uploaded).length;
     const failureCount = results.length - successCount;
     
-    console.log(`✅ Upload completed: ${successCount} success, ${failureCount} failed`);
+    console.log('📊 BATCH UPLOAD RESULTS:', {
+      total: results.length,
+      successful: successCount,
+      failed: failureCount,
+      results: results
+    });
     
     if (failureCount > 0) {
-      console.warn('Some photos failed to upload:', results.filter(r => !r.uploaded));
+      console.warn('⚠️ Some photos failed to upload:', results.filter(r => !r.uploaded));
     }
     
     return results;
   } catch (error) {
-    console.error('Error in batch photo upload:', error);
+    console.error('❌ Error in batch photo upload:', {
+      message: error.message,
+      stack: error.stack,
+      alertId: alertId,
+      imageCount: images ? images.length : 0
+    });
     throw new Error(error.message || 'Error al subir fotos');
   }
 };
