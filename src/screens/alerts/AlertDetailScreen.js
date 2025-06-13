@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAlert } from '../../context/AlertContext';
 import { useAuth } from '../../context/AuthContext';
-import { getAlertPhotos, uploadMultiplePhotos } from '../../services/photos';
+import { getAlertPhotos, uploadMultiplePhotos, deletePhoto } from '../../services/photos';
 import { COLORS, ALERT_TYPES, PET_SEX, PET_SIZE } from '../../utils/constants';
 import Loading from '../../components/common/Loading';
 import ErrorMessage from '../../components/common/ErrorMessage';
@@ -207,6 +207,44 @@ Comparte para ayudar! 🐾`;
     return user.username === currentAlert.username;
   };
 
+  // Handle photo deletion
+  const handleDeletePhoto = async (photo) => {
+    if (!isAlertOwner()) {
+      Alert.alert(
+        'Sin permisos',
+        'Solo puedes eliminar fotos de alertas que tú creaste.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    try {
+      console.log('🗑️ Deleting photo object:', {
+        id: photo.id,
+        s3ObjectKey: photo.s3ObjectKey,
+        url: photo.url,
+        description: photo.description,
+        alertId: alertId
+      });
+      
+      // Use s3ObjectKey as the identifier and pass alertId according to backend API
+      const photoIdentifier = photo.s3ObjectKey || photo.id;
+      console.log('🗑️ Using photo identifier:', photoIdentifier, 'for alert:', alertId);
+      
+      await deletePhoto(photoIdentifier, alertId);
+      
+      // Update local state by removing the deleted photo
+      setPhotos(prevPhotos => prevPhotos.filter(p => 
+        p.id !== photo.id && p.s3ObjectKey !== photo.s3ObjectKey
+      ));
+      
+      Alert.alert('Éxito', 'Foto eliminada correctamente');
+    } catch (error) {
+      console.error('Error deleting photo:', error);
+      Alert.alert('Error', 'No se pudo eliminar la foto. Inténtalo de nuevo.');
+    }
+  };
+
   const getTypeColor = () => {
     return currentAlert?.type === ALERT_TYPES.LOST ? COLORS.primary : COLORS.secondary;
   };
@@ -383,7 +421,12 @@ Comparte para ayudar! 🐾`;
                       {currentAlert.type === ALERT_TYPES.LOST ? '🔍' : '👀'} {getTypeText()}
                     </Text>
                   </View>
-                  <PhotoGallery photos={photos} style={styles.photoGallery} />
+                  <PhotoGallery 
+                    photos={photos} 
+                    style={styles.photoGallery}
+                    editable={isAlertOwner()}
+                    onDeletePhoto={handleDeletePhoto}
+                  />
                 </>
               ) : (
                 <Text style={styles.noPhotosText}>

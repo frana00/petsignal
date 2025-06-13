@@ -443,6 +443,20 @@ export const uploadPhoto = async (imageUri, alertId, description = '', filename 
 export const getAlertPhotos = async (alertId) => {
   try {
     console.log('📥 Getting photos for alert:', alertId);
+    
+    // Try the direct photos endpoint first to get proper IDs
+    try {
+      console.log('📸 Trying direct photos endpoint first');
+      const photosResponse = await apiClient.get(`/photos/alert/${alertId}`);
+      if (photosResponse.data && photosResponse.data.length > 0) {
+        console.log('📸 Found', photosResponse.data.length, 'photos with IDs from direct endpoint');
+        return photosResponse.data;
+      }
+    } catch (directError) {
+      console.log('📸 Direct photos endpoint failed, trying alert endpoint', directError.message);
+    }
+    
+    // Fallback: use alert endpoint with photoUrls
     const response = await apiClient.get(`/alerts/${alertId}`);
     
     // According to the backend documentation, photos should come with presigned URLs
@@ -452,7 +466,7 @@ export const getAlertPhotos = async (alertId) => {
       
       // Transform photoUrls to the format expected by PhotoGallery
       const photos = response.data.photoUrls.map((photoUrl, index) => ({
-        id: photoUrl.s3ObjectKey || index,
+        id: photoUrl.id || photoUrl.s3ObjectKey || index, // Prefer ID over s3ObjectKey
         url: photoUrl.presignedUrl, // This should be a GET presigned URL
         s3ObjectKey: photoUrl.s3ObjectKey,
         description: photoUrl.description || '',
@@ -462,10 +476,8 @@ export const getAlertPhotos = async (alertId) => {
       return photos;
     }
     
-    // Fallback: try the direct photos endpoint
-    console.log('📸 No photoUrls in alert response, trying direct photos endpoint');
-    const photosResponse = await apiClient.get(`/photos/alert/${alertId}`);
-    return photosResponse.data || [];
+    console.log('📸 No photos found');
+    return [];
   } catch (error) {
     console.error('Error getting alert photos:', error);
     throw new Error('Error al obtener fotos');
@@ -486,9 +498,33 @@ export const updatePhotoDescription = async (photoId, description) => {
 };
 
 // Delete photo
-export const deletePhoto = async (photoId) => {
+export const deletePhoto = async (photoIdentifier, alertId = null) => {
   try {
-    await apiClient.delete(`/photos/${photoId}`);
+    console.log('🗑️ Attempting to delete photo:', {
+      photoIdentifier,
+      alertId,
+      identifierType: typeof photoIdentifier
+    });
+    
+    // If we have alertId, use the correct API endpoint according to backend documentation
+    if (alertId && typeof photoIdentifier === 'string') {
+      console.log('🗑️ Using alert-specific photo deletion endpoint');
+      await apiClient.delete(`/alerts/${alertId}/photos/${encodeURIComponent(photoIdentifier)}`);
+      return true;
+    }
+    
+    // Legacy fallback attempts (these might not work based on backend logs)
+    console.log('🗑️ No alertId provided, trying legacy endpoints');
+    
+    // If photoIdentifier looks like a filename, try the s3 endpoint
+    if (typeof photoIdentifier === 'string' && /\.(jpg|jpeg|png|gif|webp)$/i.test(photoIdentifier)) {
+      console.log('🗑️ Detected filename format, using s3ObjectKey endpoint');
+      await apiClient.delete(`/photos/s3/${encodeURIComponent(photoIdentifier)}`);
+    } else {
+      console.log('🗑️ Using standard photo ID endpoint');
+      await apiClient.delete(`/photos/${photoIdentifier}`);
+    }
+    
     return true;
   } catch (error) {
     console.error('Error deleting photo:', error);
