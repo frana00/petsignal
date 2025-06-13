@@ -8,16 +8,20 @@ import {
   Alert,
   Linking,
   Share,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAlert } from '../../context/AlertContext';
 import { useAuth } from '../../context/AuthContext';
 import { getAlertPhotos, uploadMultiplePhotos, deletePhoto } from '../../services/photos';
+import { getPostsForAlert, createPost } from '../../services/posts';
 import { COLORS, ALERT_TYPES, PET_SEX, PET_SIZE } from '../../utils/constants';
 import Loading from '../../components/common/Loading';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import PhotoGallery from '../../components/photos/PhotoGallery';
 import PhotoPicker from '../../components/photos/PhotoPicker';
+import { PostsList, PostForm } from '../../components/posts';
 import Button from '../../components/common/Button';
 
 const AlertDetailScreen = ({ route, navigation }) => {
@@ -27,11 +31,15 @@ const AlertDetailScreen = ({ route, navigation }) => {
   const [photos, setPhotos] = useState([]);
   const [loadingPhotos, setLoadingPhotos] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [posts, setPosts] = useState([]);
+  const [loadingPosts, setLoadingPosts] = useState(false);
+  const [submittingPost, setSubmittingPost] = useState(false);
 
   useEffect(() => {
     if (alertId) {
       loadAlert();
       loadPhotos();
+      loadPosts();
     }
   }, [alertId]);
 
@@ -58,6 +66,54 @@ const AlertDetailScreen = ({ route, navigation }) => {
       console.error('❌ Error loading photos:', error);
     } finally {
       setLoadingPhotos(false);
+    }
+  };
+
+  const loadPosts = async () => {
+    console.log('🔄 AlertDetailScreen: loadPosts called for alert:', alertId);
+    try {
+      setLoadingPosts(true);
+      const alertPosts = await getPostsForAlert(alertId);
+      console.log('📝 Posts loaded:', {
+        count: alertPosts ? alertPosts.length : 0,
+        posts: alertPosts
+      });
+      setPosts(alertPosts || []);
+    } catch (error) {
+      console.error('❌ Error loading posts:', error);
+      // Don't show alert for posts loading error, just log it
+    } finally {
+      setLoadingPosts(false);
+    }
+  };
+
+  const handleCreatePost = async (content) => {
+    if (!user || !user.username) {
+      Alert.alert(
+        'Error de autenticación',
+        'Debes estar logueado para comentar',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    try {
+      setSubmittingPost(true);
+      
+      const newPost = await createPost(alertId, {
+        username: user.username,
+        content: content,
+      });
+
+      // Add the new post to the list
+      setPosts(prevPosts => [newPost, ...prevPosts]);
+      
+      Alert.alert('Éxito', 'Comentario agregado correctamente');
+    } catch (error) {
+      console.error('❌ Error creating post:', error);
+      Alert.alert('Error', error.message || 'Error al crear comentario');
+    } finally {
+      setSubmittingPost(false);
     }
   };
 
@@ -404,8 +460,13 @@ Comparte para ayudar! 🐾`;
         </View>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Alert Type Badge is now inside photosSection if photos exist */}
+      <KeyboardAvoidingView 
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Alert Type Badge is now inside photosSection if photos exist */}
 
         {/* Photos */}
         <View style={styles.photosSection}>
@@ -582,6 +643,34 @@ Comparte para ayudar! 🐾`;
           </View>
         </View>
 
+        {/* Posts Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Comentarios ({posts.length})</Text>
+          
+          {/* Post Form - Only show if user is authenticated */}
+          {user && user.username && (
+            <PostForm
+              onSubmit={handleCreatePost}
+              loading={submittingPost}
+              style={styles.postForm}
+            />
+          )}
+
+          {/* Posts List */}
+          <View style={styles.postsContainer}>
+            {loadingPosts ? (
+              <Loading message="Cargando comentarios..." />
+            ) : (
+              <PostsList
+                posts={posts}
+                loading={loadingPosts}
+                onRefresh={loadPosts}
+                style={styles.postsList}
+              />
+            )}
+          </View>
+        </View>
+
         {/* Delete Button - Only show if user owns the alert */}
         {isAlertOwner() && (
           <View style={styles.dangerZone}>
@@ -594,6 +683,7 @@ Comparte para ayudar! 🐾`;
           </View>
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -611,6 +701,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.lightGray,
+  },
+  keyboardAvoidingView: {
+    flex: 1,
   },
   backButton: {
     padding: 5,
@@ -837,6 +930,21 @@ const styles = StyleSheet.create({
   uploadingContainer: {
     marginTop: 8,
     padding: 4,
+  },
+  postForm: {
+    marginBottom: 16,
+    // Ensure the form doesn't get cut off
+    zIndex: 1,
+  },
+  postsContainer: {
+    minHeight: 200,
+    maxHeight: 300, // Limit height so keyboard doesn't interfere
+    backgroundColor: COLORS.background,
+    borderRadius: 8,
+    padding: 8,
+  },
+  postsList: {
+    flex: 1,
   },
 });
 
