@@ -30,7 +30,6 @@ const AlertForm = ({
   const [formData, setFormData] = useState({
     type: ALERT_TYPES.LOST,
     title: '',
-    petName: '',
     breed: '',
     color: '',
     sex: PET_SEX.UNKNOWN,
@@ -61,9 +60,6 @@ const AlertForm = ({
         if (description) {
           const lines = description.split('\n');
           lines.forEach(line => {
-            if (line.includes('Nombre:')) {
-              fields.petName = line.replace('Nombre:', '').trim();
-            }
             if (line.includes('Color:')) {
               fields.color = line.replace('Color:', '').trim();
             }
@@ -139,7 +135,6 @@ const AlertForm = ({
       const defaultFormData = {
         type: ALERT_TYPES.LOST,
         title: '',
-        petName: '',
         breed: '',
         color: '',
         sex: PET_SEX.UNKNOWN,
@@ -163,8 +158,6 @@ const AlertForm = ({
       };
 
       newFormDataState.title = initialData.title || defaultFormData.title;
-      // Ensure petName from initialData (if it exists directly) takes precedence
-      newFormDataState.petName = initialData.petName || parsedFields.petName || defaultFormData.petName;
       newFormDataState.description = cleanDescription;
       newFormDataState.date = initialData.date ? new Date(initialData.date) : new Date();
       newFormDataState.contactEmail = parsedFields.contactEmail || initialData.contactEmail || user?.email || defaultFormData.contactEmail;
@@ -176,13 +169,7 @@ const AlertForm = ({
         rawInitialData: initialData,
         parsedFields,
         cleanDescription,
-        finalFormDataApplied: newFormDataState,
-        petNameDebug: {
-          'initialData.petName': initialData.petName,
-          'parsedFields.petName': parsedFields.petName,
-          'defaultFormData.petName': defaultFormData.petName,
-          'final petName': newFormDataState.petName
-        }
+        finalFormDataApplied: newFormDataState
       });
     }
   }, [initialData, user?.email]);
@@ -194,13 +181,6 @@ const AlertForm = ({
 
       if (!formData.title.trim()) {
         newErrors.title = 'El título de la alerta es requerido';
-      }
-
-      // Para alertas de tipo LOST, el nombre es requerido
-      if (formData.type === ALERT_TYPES.LOST) {
-        if (!formData.petName.trim()) {
-          newErrors.petName = 'El nombre de la mascota es requerido para mascotas perdidas';
-        }
       }
 
       if (!formData.breed.trim()) {
@@ -258,7 +238,6 @@ const AlertForm = ({
           location: formData.location,
           contactPhone: formData.contactPhone,
           countryCode: formData.countryCode,
-          petName: formData.petName,
           type: formData.type
         }
       });
@@ -280,13 +259,6 @@ const AlertForm = ({
 
     if (!formData.title.trim()) {
       newErrors.title = 'El título de la alerta es requerido';
-    }
-
-    // Para alertas de tipo LOST, el nombre es requerido
-    if (formData.type === ALERT_TYPES.LOST) {
-      if (!formData.petName.trim()) {
-        newErrors.petName = 'El nombre de la mascota es requerido para mascotas perdidas';
-      }
     }
 
     if (!formData.breed.trim()) {
@@ -385,11 +357,6 @@ const AlertForm = ({
         date: formData.date.toISOString(),
         status: 'ACTIVE', // Default status
         
-        // Add petName only if it exists and is not empty
-        ...(formData.petName && formData.petName.trim() && {
-          petName: formData.petName.trim()
-        }),
-        
         // Campos opcionales del backend
         chipNumber: formData.chipNumber || undefined,
         
@@ -408,10 +375,6 @@ const AlertForm = ({
       }
 
       console.log('📤 SUBMIT DATA DEBUG:', {
-        formDataPetName: formData.petName,
-        formDataPetNameTrimmed: formData.petName ? formData.petName.trim() : null,
-        formDataPetNameExists: !!(formData.petName && formData.petName.trim()),
-        submitDataPetName: submitData.petName,
         titleInFormData: formData.title,
         titleInSubmitData: submitData.title,
         typeInSubmitData: submitData.type,
@@ -499,14 +462,6 @@ const AlertForm = ({
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Información de la Mascota</Text>
         
-        <Input
-          label={formData.type === ALERT_TYPES.LOST ? "Nombre de la mascota *" : "Nombre de la mascota (si se conoce)"}
-          value={formData.petName}
-          onChangeText={(value) => updateField('petName', value)}
-          placeholder={formData.type === ALERT_TYPES.LOST ? "Ej: Max, Luna, etc." : "Solo si tiene placa o chip identificable"}
-          error={errors.petName}
-        />
-
         <View style={styles.row}>
           <View style={styles.halfWidth}>
             <Input
@@ -737,8 +692,7 @@ const AlertForm = ({
           <Text style={{ fontSize: 12, color: '#666' }}>initialData: {initialData ? 'EXISTS' : 'NULL'}</Text>
           <Text style={{ fontSize: 12, color: '#666' }}>hasRequiredFields: {
             formData.title && formData.breed && formData.color && formData.description && 
-            formData.location && formData.contactPhone && formData.countryCode &&
-            (formData.type !== ALERT_TYPES.LOST || formData.petName) ? 'TRUE' : 'FALSE'
+            formData.location && formData.contactPhone && formData.countryCode ? 'TRUE' : 'FALSE'
           }</Text>
         </View>
         
